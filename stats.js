@@ -1,4 +1,6 @@
-
+// A quick library of statistical functions in JavaScript.
+// Mostly for me to understant the concepts, 
+// all of this is probably super implemented in NP. 
 module.exports = {
   sum,
   mean,
@@ -9,6 +11,7 @@ module.exports = {
   covariance,
   correlation,
   leastSquaresRegression,
+  linearRegressionModel,
 };
 
 
@@ -132,9 +135,9 @@ function correlation(array1, array2) {
 
 /**
  * Returns the _least squares linear regression_ of two lists of values,
- * computed as y = a + bx, where:
- * - `a` is the **intercept** of the line
- * - `b` is the **slope of** the line
+ * computed as y = mx + b, where:
+ * - `m` is the **slope of** the line
+ * - `b` is the **y-intercept** of the line
  * - `x` is the **independent/explanatory** variable
  * - `y` is the **dependent/response** variable
  * @param {*} x 
@@ -154,8 +157,21 @@ function leastSquaresRegression(x, y) {
   const sumXY = x.reduce((acc, xi, i) => acc + (xi - avgX) * (y[i] - avgY), 0);
   const sumX2 = x.reduce((acc, xi) => acc + Math.pow(xi - avgX, 2), 0);
 
-  const slope = sumXY / sumX2;
-  const intercept = avgY - slope * avgX;
+  const m = sumXY / sumX2;
+  const b = avgY - m * avgX;
 
-  return { intercept, slope };
+  return { m, b };
 }
+
+
+/**
+ * Create a linear regression model from a set of coefficients.
+ * The result is a function that takes an input `x` and 
+ * returns the predicted value `y`.
+ * @param {*} coefficients An object with `m` and `b` properties. 
+ * @returns 
+ */
+function linearRegressionModel(coefficients) {
+  return x => coefficients.b + coefficients.m * x;
+}
+

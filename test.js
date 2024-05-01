@@ -64,3 +64,17 @@ console.log(netTuition);
 // log_endow_pc	-4566.66	438.271	-10.42	0	-5436.856	-3696.463
 const lm = stats.leastSquaresRegression(logEndowments, netTuition);
 console.log("Least squares regression: ", lm);
+
+
+// const line45 = stats.leastSquaresRegression([0, 1], [0, 0.5]);
+// const predict = stats.linearRegressionModel(line45);
+// console.log(line45);
+// console.log(predict);
+// console.log("Linear regression model: ", predict(-0.5));
+
+// Fun! 
+// Create a linear regression model between two points
+// with coords [x0, x1] and [y0, y1]
+const predict = stats.linearRegressionModel(stats.leastSquaresRegression([0, 1], [0, 0.5]));
+console.log("NumsA: ", numsA);
+console.log("Predictions for numbers A:", numsA.map(predict));
