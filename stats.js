@@ -131,7 +131,7 @@ function correlation(array1, array2) {
 
 
 /**
- * Returns the _least squares regression_ of two lists of values,
+ * Returns the _least squares linear regression_ of two lists of values,
  * computed as y = a + bx, where:
  * - `a` is the **intercept** of the line
  * - `b` is the **slope of** the line
