@@ -36,5 +36,31 @@ const logEndowments = colleges.map(college => parseFloat(college['log_endow_pc']
 const netTuition = colleges.map(college => parseInt(college['scorecard_netprice_2013']));
 console.log(logEndowments);
 console.log(netTuition);
+
+
+
+// From Pset5
+// term
+// <chr>
+	
+// estimate
+// <dbl>
+	
+// std_error
+// <dbl>
+	
+// statistic
+// <dbl>
+	
+// p_value
+// <dbl>
+	
+// lower_ci
+// <dbl>
+	
+// upper_ci
+// <dbl>
+// intercept	69760.15	5349.728	13.04	0	59138.135	80382.154
+// log_endow_pc	-4566.66	438.271	-10.42	0	-5436.856	-3696.463
 const lm = stats.leastSquaresRegression(logEndowments, netTuition);
 console.log("Least squares regression: ", lm);
