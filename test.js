@@ -39,25 +39,20 @@ console.log(netTuition);
 
 
 
-// From Pset5
+// From Pset5: 
+
 // term
-// <chr>
-	
+// <chr>	
 // estimate
 // <dbl>
-	
 // std_error
 // <dbl>
-	
 // statistic
 // <dbl>
-	
 // p_value
 // <dbl>
-	
 // lower_ci
 // <dbl>
-	
 // upper_ci
 // <dbl>
 // intercept	69760.15	5349.728	13.04	0	59138.135	80382.154
