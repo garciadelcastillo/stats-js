@@ -8,6 +8,7 @@ module.exports = {
   standardDeviation,
   covariance,
   correlation,
+  leastSquaresRegression,
 };
 
 
@@ -126,4 +127,35 @@ function covariance(array1, array2) {
  */
 function correlation(array1, array2) {
   return covariance(array1, array2) / (standardDeviation(array1) * standardDeviation(array2));
+}
+
+
+/**
+ * Returns the _least squares regression_ of two lists of values,
+ * computed as y = a + bx, where:
+ * - `a` is the **intercept** of the line
+ * - `b` is the **slope of** the line
+ * - `x` is the **independent/explanatory** variable
+ * - `y` is the **dependent/response** variable
+ * @param {*} x 
+ * @param {*} y 
+ * @returns 
+ */
+function leastSquaresRegression(x, y) {
+  if (x.length !== y.length) {
+    throw new Error('Arrays must have the same length');
+  }
+
+  // This responds to the formula:
+  // b = Σ(xi - x̄)(yi - ȳ) / Σ(xi - x̄)²
+  // a = ȳ - b * x̄
+  const avgX = mean(x);
+  const avgY = mean(y);
+  const sumXY = x.reduce((acc, xi, i) => acc + (xi - avgX) * (y[i] - avgY), 0);
+  const sumX2 = x.reduce((acc, xi) => acc + Math.pow(xi - avgX, 2), 0);
+
+  const slope = sumXY / sumX2;
+  const intercept = avgY - slope * avgX;
+
+  return { intercept, slope };
 }
