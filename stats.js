@@ -150,8 +150,8 @@ function leastSquaresRegression(x, y) {
   }
 
   // This responds to the formula:
-  // b = Σ(xi - x̄)(yi - ȳ) / Σ(xi - x̄)²
-  // a = ȳ - b * x̄
+  // m = Σ(xi - x̄)(yi - ȳ) / Σ(xi - x̄)²
+  // b = ȳ - m * x̄
   const avgX = mean(x);
   const avgY = mean(y);
   const sumXY = x.reduce((acc, xi, i) => acc + (xi - avgX) * (y[i] - avgY), 0);
