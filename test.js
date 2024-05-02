@@ -1,3 +1,5 @@
+// I should probably try http://simple-statistics.github.io/docs/
+
 // const nj = require('numjs');
 const fs = require('fs');
 const csv = require('csv-parse/sync');
@@ -39,6 +41,18 @@ console.log(netTuition);
 
 
 
+
+
+// Fun! 
+// Create a linear regression model between two points
+// with coords [x0, x1] and [y0, y1]
+const simple_lm = stats.leastSquaresRegression([0, 1], [0, 0.5]);
+const simple_predict = stats.linearRegressionModel(simple_lm);
+console.log("NumsA: ", numsA);
+console.log("Predictions for numbers A:", numsA.map(simple_predict));
+console.log("");
+
+
 // From Pset5: 
 
 // term
@@ -57,19 +71,11 @@ console.log(netTuition);
 // <dbl>
 // intercept	69760.15	5349.728	13.04	0	59138.135	80382.154
 // log_endow_pc	-4566.66	438.271	-10.42	0	-5436.856	-3696.463
-const lm = stats.leastSquaresRegression(logEndowments, netTuition);
-console.log("Least squares regression: ", lm);
+console.log("ENDOWMENT vs NET TUITION");
+const tuition_lm = stats.leastSquaresRegression(logEndowments, netTuition);
+console.log("Least squares regression: ", tuition_lm);
 
-
-// const line45 = stats.leastSquaresRegression([0, 1], [0, 0.5]);
-// const predict = stats.linearRegressionModel(line45);
-// console.log(line45);
-// console.log(predict);
-// console.log("Linear regression model: ", predict(-0.5));
-
-// Fun! 
-// Create a linear regression model between two points
-// with coords [x0, x1] and [y0, y1]
-const predict = stats.linearRegressionModel(stats.leastSquaresRegression([0, 1], [0, 0.5]));
-console.log("NumsA: ", numsA);
-console.log("Predictions for numbers A:", numsA.map(predict));
+const tuition_predict = stats.linearRegressionModel(tuition_lm);
+// console.log("Predictions for net tuition: ", netTuition.map(tuition_predict));
+const tuition_r2 = stats.rSquared(logEndowments, netTuition, tuition_predict);
+console.log("R^2: ", tuition_r2);

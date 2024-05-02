@@ -12,6 +12,7 @@ module.exports = {
   correlation,
   leastSquaresRegression,
   linearRegressionModel,
+  rSquared,
 };
 
 
@@ -21,7 +22,7 @@ module.exports = {
  * @returns 
  */
 function sum(array) { 
-  return array.reduce((a, b) => a + b, 0);
+  return array.reduce((acc, val) => acc + val, 0);
 }
 
 /**
@@ -175,3 +176,46 @@ function linearRegressionModel(coefficients) {
   return x => coefficients.b + coefficients.m * x;
 }
 
+
+
+/**
+ * Returns the R-squared and adjusted R-squared values of a 
+ * linear regression model. The R-squared value is a measure of
+ * how well the model fits the data, and the adjusted R-squared
+ * value adjusts the R-squared value for the number of predictors.
+ * The R-squared value can range from 0 to 1, with 1 indicating
+ * a perfect fit, and 0 indicating no fit.
+ * The adjusted R-squared value can range from 0 to 1, with 1
+ * indicating a perfect fit, and 0 indicating no fit.
+ * R2 = 1 - Σ(yi - ŷi)² / Σ(yi - ȳ)²
+ * R2adj = 1 - (Σ(yi - ŷi)² / Σ(yi - ȳ)²) * ((n - 1) / (n - k - 1))
+ * where: 
+ * - `yi` is the observed value
+ * - `ŷi` is the predicted value
+ * - `ȳ` is the mean of the observed values
+ * - `n` is the number of observations
+ * - `k` is the number of predictors 
+ * @param {*} x 
+ * @param {*} y 
+ * @param {*} model 
+ * @returns 
+ */
+function rSquared(x, y, model) {
+  if (x.length !== y.length) {
+    throw new Error('Arrays must have the same length');
+  }
+
+  const avgY = mean(y);
+  const sumY2 = y.reduce((acc, yi) => acc + Math.pow(yi - avgY, 2), 0);
+  const sumResiduals2 = y.reduce((acc, yi, i) => {
+    const predictedY = model(x[i]);
+    return acc + Math.pow(yi - predictedY, 2);
+  }, 0);
+
+  const adjustFactor = (x.length - 1) / (x.length - 1 - 1);
+
+  const r2 = 1 - (sumResiduals2 / sumY2);
+  const r2adj = 1 - (sumResiduals2 / sumY2) * adjustFactor ;
+  
+  return { r2, r2adj };
+}
