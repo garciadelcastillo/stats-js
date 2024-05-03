@@ -26,22 +26,6 @@ console.log("Covariance of numsA & numsB: ", stats.covariance(numsA, numsB));
 console.log("Correlation of numsA & numsB: ", stats.correlation(numsA, numsB));
 console.log("");
 
-const endowments = colleges.map(college => parseFloat(college['fy2016_endowment_pc']));
-// console.log(endowments);
-console.log("Average endowment per student: ", stats.mean(endowments));
-console.log("Median endowment per student: ", stats.median(endowments));
-console.log("Mean deviation of endowments: ", stats.meanDeviation(endowments));
-console.log("Standard deviation of endowments: ", stats.standardDeviation(endowments));
-console.log("Variance of endowments: ", stats.variance(endowments));
-
-const logEndowments = colleges.map(college => parseFloat(college['log_endow_pc']));
-const netTuition = colleges.map(college => parseInt(college['scorecard_netprice_2013']));
-console.log(logEndowments);
-console.log(netTuition);
-
-
-
-
 
 // Fun! 
 // Create a linear regression model between two points
@@ -51,6 +35,10 @@ const simple_predict = stats.linearRegressionModel(simple_lm);
 console.log("NumsA: ", numsA);
 console.log("Predictions for numbers A:", numsA.map(simple_predict));
 console.log("");
+
+
+
+
 
 
 // From Pset5: 
@@ -72,6 +60,22 @@ console.log("");
 // intercept	69760.15	5349.728	13.04	0	59138.135	80382.154
 // log_endow_pc	-4566.66	438.271	-10.42	0	-5436.856	-3696.463
 console.log("ENDOWMENT vs NET TUITION");
+const endowments = colleges.map(college => parseFloat(college['fy2016_endowment_pc']));
+// console.log(endowments);
+console.log("Average endowment per student: ", stats.mean(endowments));
+console.log("Median endowment per student: ", stats.median(endowments));
+console.log("Mean deviation of endowments: ", stats.meanDeviation(endowments));
+console.log("Standard deviation of endowments: ", stats.standardDeviation(endowments));
+console.log("Variance of endowments: ", stats.variance(endowments));
+
+const logEndowments = colleges.map(college => parseFloat(college['log_endow_pc']));
+const netTuition = colleges.map(college => parseInt(college['scorecard_netprice_2013']));
+// console.log(logEndowments);
+// console.log(netTuition);
+console.log("Covariance of logEndowments and net tuition: ", stats.covariance(logEndowments, netTuition));
+console.log("Correlation of logEndowments and net tuition: ", stats.correlation(logEndowments, netTuition));
+
+
 const tuition_lm = stats.leastSquaresRegression(logEndowments, netTuition);
 console.log("Least squares regression: ", tuition_lm);
 

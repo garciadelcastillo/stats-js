@@ -18,30 +18,30 @@ module.exports = {
 
 /**
  * Computes the sum of a list of numbers as Σxi.
- * @param {*} array 
+ * @param {*} x 
  * @returns 
  */
-function sum(array) { 
-  return array.reduce((acc, val) => acc + val, 0);
+function sum(x) { 
+  return x.reduce((acc, val) => acc + val, 0);
 }
 
 /**
  * Computes the average of a list of numbers, 
  * computed as x̄ = Σxi / n
- * @param {*} array 
+ * @param {*} x 
  * @returns 
  */
-function mean(array) {
-  return sum(array) / array.length;
+function mean(x) {
+  return sum(x) / x.length;
 }
 
 /**
  * Returns the median of a list of numbers.
- * @param {*} array 
+ * @param {*} x 
  * @returns 
  */
-function median(array) {
-  const sorted = array.toSorted((a, b) => b - a);
+function median(x) {
+  const sorted = x.toSorted((a, b) => b - a);
   const length = sorted.length;
   if (length % 2 == 0) {
     return (sorted[length / 2] + sorted[(length / 2) - 1]) / 2;
@@ -53,35 +53,35 @@ function median(array) {
 /**
  * Computes the average deviation of a list of numbers,
  * computed as Σ|xi - x̄| / n
- * @param {*} array 
+ * @param {*} x 
  * @returns 
  */
-function meanDeviation(array) {
-  const avg = mean(array);
+function meanDeviation(x) {
+  const avg = mean(x);
   // return mean(array.map(value => Math.abs(value - avg)));
   
   let sum = 0;
-  for (let i = 0; i < array.length; i++) {
-    sum += Math.abs(array[i] - avg);
+  for (let i = 0; i < x.length; i++) {
+    sum += Math.abs(x[i] - avg);
   }
-  return sum / array.length;
+  return sum / x.length;
 }
 
 /**
  * Returns the _sample variance_ `s²` or `var` of a list of values,
  * computed as s² = Σ(x - x̄)² / (n - 1). 
- * @param {*} array 
+ * @param {*} x 
  * @returns 
  */
-function variance(array) {
-  // Diff between _sample_ and _polulation_ variance:
+function variance(x) {
+  // Diff between _sample_ and _polulation_ varian0ce:
   // https://www.ncl.ac.uk/webtemplate/ask-assets/external/maths-resources/statistics/descriptive-statistics/variance-and-standard-deviation.html
-  const avg = mean(array);
+  const avg = mean(x);
   let sum = 0;
-  for (let i = 0; i < array.length; i++) {
-    sum += Math.pow(array[i] - avg, 2);
+  for (let i = 0; i < x.length; i++) {
+    sum += Math.pow(x[i] - avg, 2);
   }
-  return sum / (array.length - 1);
+  return sum / (x.length - 1);
 }
 
 /**
@@ -101,21 +101,21 @@ function standardDeviation(array) {
  * with a negative value indicating a negative relationship 
  * and a positive value indicating a positive relationship.
  * See more here: https://www.simplilearn.com/covariance-vs-correlation-article
- * @param {*} array1 
- * @param {*} array2 
+ * @param {*} x 
+ * @param {*} y 
  * @returns 
  */
-function covariance(array1, array2) {
-  if (array1.length !== array2.length) {
+function covariance(x, y) {
+  if (x.length !== y.length) {
     throw new Error('Arrays must have the same length');
   }
-  const avg1 = mean(array1);
-  const avg2 = mean(array2);
+  const avg1 = mean(x);
+  const avg2 = mean(y);
   let sum = 0;
-  for (let i = 0; i < array1.length; i++) {
-    sum += (array1[i] - avg1) * (array2[i] - avg2);
+  for (let i = 0; i < x.length; i++) {
+    sum += (x[i] - avg1) * (y[i] - avg2);
   }
-  return sum / (array1.length - 1);
+  return sum / (x.length - 1);
 }
 
 
@@ -125,12 +125,12 @@ function covariance(array1, array2) {
  * The correlation value can range from -1 to +1, 
  * with sign indicates the direction of the relationship,
  * and the magnitude indicates the strength of the linear relationship.
- * @param {*} array1 
- * @param {*} array2 
+ * @param {*} x 
+ * @param {*} y 
  * @returns 
  */
-function correlation(array1, array2) {
-  return covariance(array1, array2) / (standardDeviation(array1) * standardDeviation(array2));
+function correlation(x, y) {
+  return covariance(x, y) / (standardDeviation(x) * standardDeviation(y));
 }
 
 
@@ -160,6 +160,10 @@ function leastSquaresRegression(x, y) {
 
   const m = sumXY / sumX2;
   const b = avgY - m * avgX;
+
+  // // Slope can also be computed as:
+  // // m = cor(x, y) * (σy / σx)
+  // console.log("Alt B1: " + (correlation(x, y) * (standardDeviation(y) / standardDeviation(x))));
 
   return { m, b };
 }
