@@ -219,7 +219,13 @@ function rSquared(x, y, model) {
   const adjustFactor = (x.length - 1) / (x.length - 1 - 1);
 
   const r2 = 1 - (sumResiduals2 / sumY2);
-  const r2adj = 1 - (sumResiduals2 / sumY2) * adjustFactor ;
+  const r2adj = 1 - (sumResiduals2 / sumY2) * adjustFactor;
+
+  // // R2 can also be computed as:
+  // // r2 = var(ŷ) / var(y)
+  // const r2Alt = variance(x.map(model)) / variance(y);
+  // console.log("R2: " + r2);
+  // console.log("R2 alt: " + r2Alt);
   
   return { r2, r2adj };
 }
