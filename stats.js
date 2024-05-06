@@ -13,6 +13,13 @@ module.exports = {
   leastSquaresRegression,
   linearRegressionModel,
   rSquared,
+  randomNumbers, 
+  sample,
+  sampleWithReplacement, 
+  bootstrapSamples,
+  bootstrap,
+  confidenceInterval,
+  confidenceIntervalSE
 };
 
 
@@ -228,4 +235,114 @@ function rSquared(x, y, model) {
   // console.log("R2 alt: " + r2Alt);
   
   return { r2, r2adj };
+}
+
+/**
+ * Returns an array of random numbers between `min` and `max`.
+ * @param {*} n 
+ * @param {*} min 
+ * @param {*} max 
+ * @returns 
+ */
+function randomNumbers(n, min, max) {
+  const mag = max - min;
+  return Array.from({ length: n }, () => Math.random() * mag + min);
+}
+
+/**
+ * Returns a random sample of `n` elements from an array.
+ * No element will be repeated in the sample.
+ * @param {*} array 
+ * @param {*} n 
+ * @returns 
+ */
+function sample(array, n) {
+  const shuffled = array.slice(0);
+  let i = array.length;
+  let temp;
+  let index;
+  while (i--) {
+    index = Math.floor((i + 1) * Math.random());
+    temp = shuffled[index];
+    shuffled[index] = shuffled[i];
+    shuffled[i] = temp;
+  }
+  return shuffled.slice(0, n);
+}
+
+/**
+ * Returns a random sample of `n` elements from an array, 
+ * allowing elements to be repeated in the sample.
+ * @param {*} array 
+ * @param {*} n 
+ * @returns 
+ */
+function sampleWithReplacement(array, n) {
+  return Array.from({ length: n }, () => array[Math.floor(Math.random() * array.length)]);
+}
+
+
+/**
+ * Returns an array of `reps` bootstapped samples from the array.
+ * @param {*} array 
+ * @param {*} reps 
+ * @returns 
+ */
+function bootstrapSamples(array, reps) {
+  return Array.from({ length: reps }, () => sampleWithReplacement(array, array.length));
+}
+
+
+/**
+ * Returns an array of values obtained by applying the `statistic` function
+ * to a set of bootstrapped samples from the array.
+ * @param {*} array 
+ * @param {*} reps 
+ * @param {*} statistic 
+ * @returns 
+ */
+function bootstrap(array, reps, statistic) {
+  return bootstrapSamples(array, reps).map(statistic);
+}
+
+
+/**
+ * Returns the confidence interval of a statistic.
+ * The confidence interval is computed as the `level` quantile
+ * of the sorted array of statistics.
+ * @param {*} array 
+ * @param {*} level 
+ * @returns 
+ */
+function confidenceInterval(array, level) {
+  const sorted = array.slice().sort((a, b) => a - b);
+  const lower = sorted[Math.floor((1 - level) / 2 * array.length)];
+  const upper = sorted[Math.floor((1 + level) / 2 * array.length)];
+  return { lower, upper, level };
+}
+
+
+
+/**
+ * Returns the confidence interval of a statistic computed from 
+ * a set of bootstrapped samples around a given value. 
+ * It uses 2 * $\widehat{SE}$ of the statistic as the margin of error.
+ * @param {*} array Array of bootstrapped statistics.
+ * @param {*} level At this time, it must be 0.95
+ * @param {*} pointEstimate The point estimate of the statistic to compute the confidence interval around. If no value is provided, the mean of the array is used.
+ * @returns 
+ */
+function confidenceIntervalSE(array, level, pointEstimate) {
+  if (level != 0.95) console.log("Warning: This function currently only works for 95% confidence intervals");
+
+  const meanValue = mean(array);
+  const stdError = standardDeviation(array);
+  const marginError = 2 * stdError;
+  return {
+    lower: meanValue - marginError,
+    upper: meanValue + marginError,
+    pointEstimate: pointEstimate || meanValue,
+    level,
+    marginError
+  };
 }

@@ -83,3 +83,30 @@ const tuition_predict = stats.linearRegressionModel(tuition_lm);
 // console.log("Predictions for net tuition: ", netTuition.map(tuition_predict));
 const tuition_r2 = stats.rSquared(logEndowments, netTuition, tuition_predict);
 console.log("R^2: ", tuition_r2);
+console.log("");
+
+
+
+// Inference and Estimation
+console.log("INFERENCE AND ESTIMATION");
+const saratogaHouses = csv.parse(fs.readFileSync('sample_data/saratogahouses.csv', 'utf8'), {
+    columns: true,
+    skip_empty_lines: true,
+    delimiter: ','
+});
+
+const prices = saratogaHouses.map(house => parseInt(house['price']));
+const meanPrice = stats.mean(prices);
+console.log("Saratoga house price mean: ", meanPrice);
+const price_mean_bs_dist = stats.bootstrap(prices, 1000, stats.mean);
+console.log("Saratoga BOOTSTRAPPED house price MEAN: ", stats.mean(price_mean_bs_dist));
+const price_mean_ci = stats.confidenceInterval(price_mean_bs_dist, 0.95);
+console.log(`Saratoga house price mean ${price_mean_ci.level*100}% CI (percentile): `, price_mean_ci);
+const price_mean_ci_se = stats.confidenceIntervalSE(price_mean_bs_dist, 0.95);
+console.log(`Saratoga house price mean ${price_mean_ci_se.level*100}% CI (standard error): `, price_mean_ci_se);
+
+const medianPrice = stats.median(prices);
+console.log("Saratoga house price median: ", medianPrice);
+const price_median_bs_dist = stats.bootstrap(prices, 1000, stats.median);
+console.log("Saratoga BOOTSTRAPPED house price MEDIAN: ", stats.mean(price_median_bs_dist));
+
