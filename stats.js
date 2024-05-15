@@ -439,27 +439,6 @@ function randomStandardNormalSamples(n, targetMean, targetStdDev) {
 
 
 
-
-
-
-/**
- * Creates a null hypothesis distribution for the mean of a given data sample,
- * computed based on a specific point value.
- * The function will generate bootstrapped samples based on the original sample,
- * shift their value based on the mean differences, and return the mean of each.
- * @param {*} sample 
- * @param {*} reps 
- * @param {*} point 
- * @returns 
- */
-function nullDistributionMean(sample, reps, point) {
-  const delta = point - mean(sample);
-  return bootstrapSamples(sample, reps)
-    .map(sample => sample.map(x => x + delta))
-    .map(mean);
-}
-
-
 /**
  * Creates a null hypothesis distribution for a given data sample,
  * computed based on specific options. 
@@ -478,7 +457,7 @@ function nullDistribution(sample, reps, opts) {
     }
 
     if (opts.statistic === "mean") {
-      return nullDistributionMean(sample, reps, opts.point);
+      return _nullDistributionMean(sample, reps, opts.point);
     }
   }
 
@@ -487,6 +466,87 @@ function nullDistribution(sample, reps, opts) {
 }
 
 
+/**
+ * Creates a null hypothesis distribution for the mean of a given data sample,
+ * computed based on a specific point value.
+ * The function will generate bootstrapped samples based on the original sample,
+ * shift their value based on the mean differences, and return the mean of each.
+ * @param {*} sample 
+ * @param {*} reps 
+ * @param {*} point 
+ * @returns 
+ */
+function _nullDistributionMean(sample, reps, point) {
+  const delta = point - mean(sample);
+  return bootstrapSamples(sample, reps)
+    .map(sample => sample.map(x => x + delta))
+    .map(mean);
+}
+
+
+/**
+ * Computes the p-value for a given distribution and observed statistic.
+ * The p-value is "the probability of observing a value as extreme as the observed
+ * statistic or more, assuming the null hypothesis is true". Typically, the p-value
+ * is compared to a significance level (e.g., 0.05) to determine if the null hypothesis
+ * should be rejected.
+ * @param {*} distribution 
+ * @param {*} observedStat 
+ * @param {*} direction "two-sided","two-tailed" | "greater" | "less","smaller"
+ * @returns 
+ */
+function pValue(distribution, observedStat, direction) {
+  switch (direction) {
+    case "two-sided":
+    case "two-tailed":
+      return _pValueTwoSided(distribution, observedStat);
+    case "greater":
+      return _pValueGreater(distribution, observedStat);
+    case "less":
+    case "smaller":
+      return _pValueLess(distribution, observedStat);
+    default:
+      console.log("WARNING: invalid p-value direction.");
+      return null;
+  }
+}
+
+
+
+function _pValueTwoSided(distribution, observedStat) {
+  // JL: I first assumed that the calculation of the p-value for a two-sided test
+  // would be figuring out which side the observedStat is on and then calculating
+  // the proportion of values on the opposite side, equidistant to a null value
+  // (either set or calculated from the distribution).
+
+  // const nullValue = (options && options.nullValue !== null) ?
+  //   options.nullValue : median(distribution);
+  // const d = Math.abs(observedStat - nullValue);
+  // let leftTail, rightTail;
+  // if (observedStat > nullValue) {
+  //   rightTail = distribution.filter(x => x >= observedStat).length;
+  //   leftTail = distribution.filter(x => x <= nullValue - d).length;
+  // } else {
+  //   leftTail = distribution.filter(x => x <= observedStat).length;
+  //   rightTail = distribution.filter(x => x >= nullValue + d).length;
+  // }
+  // return (leftTail + rightTail) / distribution.length;
+
+  // However, it looks like the R `infer` package simply calculates it as
+  // double the minimum of the two one-sided p-values:
+  // https://github.com/tidymodels/infer/blob/1d069b3e16569cbb5f7dc9a5458e52379441259f/R/get_p_value.R#L249
+  const leftTail = _pValueLess(distribution, observedStat);
+  const rightTail = _pValueGreater(distribution, observedStat);
+  return Math.min(leftTail, rightTail) * 2;
+}
+
+function _pValueGreater(distribution, observedStat) {
+  return distribution.filter(x => x >= observedStat).length / distribution.length;
+}
+
+function _pValueLess(distribution, observedStat) {
+  return distribution.filter(x => x <= observedStat).length / distribution.length;
+}
 
 
 
@@ -538,4 +598,5 @@ module.exports = {
   randomStandardNormal,
   randomStandardNormalSamples,
   nullDistribution,
+  pValue
 };

@@ -150,7 +150,9 @@ console.log("");
 
 // RANDOM NUMBERS
 print("RANDOM NUMBERS")
-let randomSample = Array.from({length: 100000}, Math.random);
+let randomSample = Array.from({
+    length: 100000
+}, Math.random);
 print("Math.random(): ", randomSample.slice(0, 10));
 print("  Extremes: ", stats.extremes(randomSample));
 print("  Mean of random sample: ", stats.mean(randomSample));
@@ -160,7 +162,9 @@ print();
 // Pseudo-random number generators (PRNGs) in JavaScript:
 //  Math.random() cannot be seeded, so I implemented a simple PRNG that can be seeded.
 stats.randomSeed(1000);
-randomSample = Array.from({length: 100000}, stats.random);
+randomSample = Array.from({
+    length: 100000
+}, stats.random);
 print("SplitMix32: ", randomSample.slice(0, 10));
 print("  Extremes: ", stats.extremes(randomSample));
 print("  Mean of random sample: ", stats.mean(randomSample));
@@ -171,7 +175,9 @@ print("  Standard deviation of random sample: ", stats.standardDeviation(randomS
 // RANDOM STANDARD NORMAL NUMBERS
 // Generating random standard normal numbers using the Box-Muller transform.
 stats.randomSeed(Date.now() * Math.random());
-randomSample = Array.from({length: 100000}, stats.randomStandardNormal);
+randomSample = Array.from({
+    length: 100000
+}, stats.randomStandardNormal);
 print("Random Standard Normal: ", randomSample.slice(0, 10));
 print("  Extremes: ", stats.extremes(randomSample));
 print("  Mean of random sample: ", stats.mean(randomSample));
@@ -199,10 +205,11 @@ print("b) Compute the observed test statistic. Interpret the observed test stati
 const livingAreas = saratogaHouses
     .filter(house => parseInt(house['bedrooms']) == 5)
     .map(house => parseInt(house['livingArea']))
+let test_stat = stats.mean(livingAreas);
 
 print("  Living areas of 5-bedroom houses: ", livingAreas);
 print("  Extremes: ", stats.extremes(livingAreas));
-print("  Mean living area of 5-bedroom houses: ", stats.mean(livingAreas));
+print("  Mean living area of 5-bedroom houses: ", test_stat);
 print("  Standard deviation of living area of 5-bedroom houses: ", stats.standardDeviation(livingAreas));
 print("");
 
@@ -213,15 +220,14 @@ print("c) Generate the null distribution and compute a $p$-value. Interpret the 
 print("  JLX: creating a null distribution here means creating a random sample of living areas whose mean is 2700 sqft (as per the above).")
 print()
 
-
 // JL: Originally, I thought this was done by generating random standard normal numbers and then transforming them to the desired mean and standard deviation, the desired SD being the samepl as the original sample. 
+
 // let null_dist = stats.randomStandardNormalSamples(1000, 2700, 100);
 // print("nullDistribution: ", null_dist);
 // print("  Extremes: ", stats.extremes(null_dist));
 // print("  Mean of null distribution: ", stats.mean(null_dist));
 // print("  Standard deviation of null distribution: ", stats.standardDeviation(null_dist));
 // print("");
-
 
 // JL: however, digging a little deeper, turns out the `infer` package in R does it by bootstrapping the original sample and shifting the values by the mean differnce! 
 // Doing this yields similar results to what I got in R.
@@ -234,7 +240,15 @@ print("nullDistribution: ", null_dist);
 print("  Extremes: ", stats.extremes(null_dist));
 print("  Mean of null distribution: ", stats.mean(null_dist));
 print("  Standard deviation of null distribution: ", stats.standardDeviation(null_dist));
+let p_value = stats.pValue(null_dist, test_stat, "two-sided");
+// let p_value = stats.pValue(null_dist, test_stat, "two-sided", {nullValue: 2700});
+print("  p-value: ", p_value);
+print("  Is the p-value significant at the 0.05 level? ", p_value < 0.05);
 print("");
 
+print(`The two-sided $p$-value is ${p_value}. If the mean living area for all 5-bedroom homes in Saratoga was 2700 sqft, there would only be a ${p_value} probability that the observed sample had a mean living area smaller than ${Math.round(test_stat,0)} or larger than ${Math.round(2700 + (2700 - test_stat))} sqft. Estimating the significance level at $\alpha = 0.05$, this is evidence to reject $H_0$ and suggest that the mean living area for all 5-bedroomers in Saratoga is _different_ than 2700 sqft.1)`);
+print("");
+print("");
 
+print("2. Do these data suggest that houses which include waterfront are on average more expensive than those that do not? Conduct a hypothesis test and summarize the findings.")
 
