@@ -2,6 +2,14 @@ const TAU = 2 * Math.PI;
 const SQRT_TAU = Math.sqrt(TAU);
 
 
+//  █████╗ ██████╗ ██╗████████╗██╗  ██╗███╗   ███╗███████╗████████╗██╗ ██████╗
+// ██╔══██╗██╔══██╗██║╚══██╔══╝██║  ██║████╗ ████║██╔════╝╚══██╔══╝██║██╔════╝
+// ███████║██████╔╝██║   ██║   ███████║██╔████╔██║█████╗     ██║   ██║██║     
+// ██╔══██║██╔══██╗██║   ██║   ██╔══██║██║╚██╔╝██║██╔══╝     ██║   ██║██║     
+// ██║  ██║██║  ██║██║   ██║   ██║  ██║██║ ╚═╝ ██║███████╗   ██║   ██║╚██████╗
+// ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝   ╚═╝   ╚═╝  ╚═╝╚═╝     ╚═╝╚══════╝   ╚═╝   ╚═╝ ╚═════╝
+//                                                                            
+
 // A function that given an array of values, returns another
 // array with the [min, max] values
 function extremes(array) {
@@ -33,6 +41,16 @@ function sum(x) {
  */
 function mean(x) {
   return sum(x) / x.length;
+}
+
+/**
+ * Computes the difference of the means of two lists of numbers,
+ * i.e. x̄ - ȳ.
+ * @param {*} vars Array of two random variables [x, y]
+ * @returns 
+ */
+function meanDifference(vars) {
+  return mean(vars[0]) - mean(vars[1]);
 }
 
 /**
@@ -93,6 +111,16 @@ function variance(x) {
 function standardDeviation(array) {
   return Math.sqrt(variance(array));
 }
+
+
+
+// ███╗   ███╗ ██████╗ ██████╗ ███████╗██╗     ██╗███╗   ██╗ ██████╗ 
+// ████╗ ████║██╔═══██╗██╔══██╗██╔════╝██║     ██║████╗  ██║██╔════╝ 
+// ██╔████╔██║██║   ██║██║  ██║█████╗  ██║     ██║██╔██╗ ██║██║  ███╗
+// ██║╚██╔╝██║██║   ██║██║  ██║██╔══╝  ██║     ██║██║╚██╗██║██║   ██║
+// ██║ ╚═╝ ██║╚██████╔╝██████╔╝███████╗███████╗██║██║ ╚████║╚██████╔╝
+// ╚═╝     ╚═╝ ╚═════╝ ╚═════╝ ╚══════╝╚══════╝╚═╝╚═╝  ╚═══╝ ╚═════╝ 
+//                                                                   
 
 /**
  * Returns the _sample_ covariance `cov` of two lists of values,
@@ -236,19 +264,15 @@ function rSquared(x, y, model) {
   };
 }
 
-// /**
-//  * Returns an array of random numbers between `min` and `max`.
-//  * @param {*} n 
-//  * @param {*} min 
-//  * @param {*} max 
-//  * @returns 
-//  */
-// function randomNumbers(n, min, max) {
-//   const mag = max - min;
-//   return Array.from({
-//     length: n
-//   }, () => Math.random() * mag + min);
-// }
+
+
+// ███████╗ █████╗ ███╗   ███╗██████╗ ██╗     ██╗███╗   ██╗ ██████╗ 
+// ██╔════╝██╔══██╗████╗ ████║██╔══██╗██║     ██║████╗  ██║██╔════╝ 
+// ███████╗███████║██╔████╔██║██████╔╝██║     ██║██╔██╗ ██║██║  ███╗
+// ╚════██║██╔══██║██║╚██╔╝██║██╔═══╝ ██║     ██║██║╚██╗██║██║   ██║
+// ███████║██║  ██║██║ ╚═╝ ██║██║     ███████╗██║██║ ╚████║╚██████╔╝
+// ╚══════╝╚═╝  ╚═╝╚═╝     ╚═╝╚═╝     ╚══════╝╚═╝╚═╝  ╚═══╝ ╚═════╝ 
+//                                                                  
 
 /**
  * Returns a random sample of `n` elements from an array.
@@ -263,7 +287,7 @@ function sample(array, n) {
   let temp;
   let index;
   while (i--) {
-    index = Math.floor((i + 1) * Math.random());
+    index = Math.floor((i + 1) * random());
     temp = shuffled[index];
     shuffled[index] = shuffled[i];
     shuffled[i] = temp;
@@ -281,7 +305,7 @@ function sample(array, n) {
 function sampleWithReplacement(array, n) {
   return Array.from({
     length: n
-  }, () => array[Math.floor(Math.random() * array.length)]);
+  }, () => array[Math.floor(random() * array.length)]);
 }
 
 
@@ -310,6 +334,29 @@ function bootstrap(array, reps, statistic) {
   return bootstrapSamples(array, reps).map(statistic);
 }
 
+
+/**
+ * Takes an array of arrays, and returns a copy where each array
+ * has been shuffled.
+ * @param {*} samples 
+ * @returns 
+ */
+function _permuteSamples(samples) {
+  return samples.map(arr => sample(arr, arr.length));
+}
+
+
+
+
+
+
+//  ██████╗ ██████╗ ███╗   ██╗███████╗██╗██████╗ ███████╗███╗   ██╗ ██████╗███████╗
+// ██╔════╝██╔═══██╗████╗  ██║██╔════╝██║██╔══██╗██╔════╝████╗  ██║██╔════╝██╔════╝
+// ██║     ██║   ██║██╔██╗ ██║█████╗  ██║██║  ██║█████╗  ██╔██╗ ██║██║     █████╗  
+// ██║     ██║   ██║██║╚██╗██║██╔══╝  ██║██║  ██║██╔══╝  ██║╚██╗██║██║     ██╔══╝  
+// ╚██████╗╚██████╔╝██║ ╚████║██║     ██║██████╔╝███████╗██║ ╚████║╚██████╗███████╗
+//  ╚═════╝ ╚═════╝ ╚═╝  ╚═══╝╚═╝     ╚═╝╚═════╝ ╚══════╝╚═╝  ╚═══╝ ╚═════╝╚══════╝
+//                                                                                 
 
 /**
  * Returns the confidence interval of a statistic.
@@ -358,6 +405,13 @@ function confidenceIntervalSE(array, level, pointEstimate) {
 }
 
 
+// ██████╗  █████╗ ███╗   ██╗██████╗  ██████╗ ███╗   ███╗
+// ██╔══██╗██╔══██╗████╗  ██║██╔══██╗██╔═══██╗████╗ ████║
+// ██████╔╝███████║██╔██╗ ██║██║  ██║██║   ██║██╔████╔██║
+// ██╔══██╗██╔══██║██║╚██╗██║██║  ██║██║   ██║██║╚██╔╝██║
+// ██║  ██║██║  ██║██║ ╚████║██████╔╝╚██████╔╝██║ ╚═╝ ██║
+// ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═════╝  ╚═════╝ ╚═╝     ╚═╝
+//                                                       
 
 // Local var for seed state and init it. 
 let currentSeed = Date.now() * Math.random();
@@ -399,11 +453,12 @@ function randomSeed(seed) {
  * @returns 
  */
 function randomStandardNormal() {
-  let u1 = 0, u2 = 0;
+  let u1 = 0,
+    u2 = 0;
 
   // Avoid the zero endpoint
-  while(u1 === 0) u1 = random(); 
-  while(u2 === 0) u2 = random();
+  while (u1 === 0) u1 = random();
+  while (u2 === 0) u2 = random();
 
   let z0 = Math.sqrt(-2.0 * Math.log(u1)) * Math.cos(2.0 * Math.PI * u2);
   // let z1 = Math.sqrt(-2.0 * Math.log(u1)) * Math.sin(2.0 * Math.PI * u2); 
@@ -423,8 +478,13 @@ function randomStandardNormal() {
  */
 function randomStandardNormalSamples(n, targetMean, targetStdDev) {
   // Use a linear model to scale and shift the SN random numbers
-  const linear = linearRegressionModel({m: targetStdDev, b: targetMean});
-  const rans = Array.from({length: n}, randomStandardNormal).map(linear);
+  const linear = linearRegressionModel({
+    m: targetStdDev,
+    b: targetMean
+  });
+  const rans = Array.from({
+    length: n
+  }, randomStandardNormal).map(linear);
   return rans;
 
   // // Older version
@@ -438,6 +498,21 @@ function randomStandardNormalSamples(n, targetMean, targetStdDev) {
 }
 
 
+// ███╗   ██╗██╗   ██╗██╗     ██╗     
+// ████╗  ██║██║   ██║██║     ██║     
+// ██╔██╗ ██║██║   ██║██║     ██║     
+// ██║╚██╗██║██║   ██║██║     ██║     
+// ██║ ╚████║╚██████╔╝███████╗███████╗
+// ╚═╝  ╚═══╝ ╚═════╝ ╚══════╝╚══════╝
+//                                    
+// ██████╗ ██╗███████╗████████╗
+// ██╔══██╗██║██╔════╝╚══██╔══╝
+// ██║  ██║██║███████╗   ██║   
+// ██║  ██║██║╚════██║   ██║   
+// ██████╔╝██║███████║   ██║   
+// ╚═════╝ ╚═╝╚══════╝   ╚═╝   
+//                             
+
 
 /**
  * Creates a null hypothesis distribution for a given data sample,
@@ -445,13 +520,13 @@ function randomStandardNormalSamples(n, targetMean, targetStdDev) {
  * @param {*} sample 
  * @param {*} reps 
  * @param {*} opts An object with the following properties:
- * - type: "point"
+ * - null: "point"
  * - point: The point value to use
  * - statistic: "mean"
  * @returns 
  */
 function nullDistribution(sample, reps, opts) {
-  if (opts.type === "point") {
+  if (opts.null === "point") {
     if (opts.point === null) {
       throw new Error("Missing point value");
     }
@@ -485,6 +560,77 @@ function _nullDistributionMean(sample, reps, point) {
 
 
 /**
+ * Creates a null hypothesis distribution for a multi-variable data sample,
+ * akin to R's `(res_var ~ exp_var)` formula. 
+ * AS OF RIGHT NOW it only supports "Independence" and the "diff in means" statistic.
+ * @param {*} samples An array of [res, exp] samples
+ * @param {*} reps 
+ * @param {*} opts Options objcet with the following properties:
+ * {
+    null: "independence",
+    statistic: "diff in means",
+    types: ["numerical", "categorical"],  // in [res, exp] order
+    order: (unique values of the cat variable in [0] - [1] order),
+    }
+ * @returns 
+ */
+function nullDistributionMulti(samples, reps, opts) {
+  if (opts.null === "independence") {
+    if (opts.statistic === "diff in means") {
+      return _nullDistributionPermutationDiffMeans(samples, reps, opts);
+    }
+  }
+
+  console.log("WARNING: invalid null distribution options.");
+  return [];
+}
+
+
+/**
+ * Computes the null hypothesis distribution for the difference in means
+ * of a multi-variable data sample, using a permutation test. 
+ * Works for a categorical and a numerical variable.
+ * @param {*} samples 
+ * @param {*} reps 
+ * @param {*} opts 
+ * @returns 
+ */
+function _nullDistributionPermutationDiffMeans(samples, reps, opts) {
+  // Which variable is which? 
+  const numId = opts.types.indexOf("numerical");
+  const catId = opts.types.indexOf("categorical");
+
+  // Generate the permutation distribution
+  const diffs = Array.from({
+    length: reps
+  }, () => {
+    // Randomly permute the samples to de-corrlate them
+    // i.e. making their values independent of each other
+    const permuted = _permuteSamples(samples);
+
+    // Group the numerical values based on the categorical ones
+    const values0 = permuted[numId].filter((_, i) => permuted[catId][i] === opts.order[0]);
+    const values1 = permuted[numId].filter((_, i) => permuted[catId][i] === opts.order[1]);
+    
+    // Compute the difference in means in the stated order
+    return mean(values0) - mean(values1);
+  });
+
+  return diffs;
+}
+
+
+
+
+// ██████╗       ██╗   ██╗ █████╗ ██╗     ██╗   ██╗███████╗
+// ██╔══██╗      ██║   ██║██╔══██╗██║     ██║   ██║██╔════╝
+// ██████╔╝█████╗██║   ██║███████║██║     ██║   ██║█████╗  
+// ██╔═══╝ ╚════╝╚██╗ ██╔╝██╔══██║██║     ██║   ██║██╔══╝  
+// ██║            ╚████╔╝ ██║  ██║███████╗╚██████╔╝███████╗
+// ╚═╝             ╚═══╝  ╚═╝  ╚═╝╚══════╝ ╚═════╝ ╚══════╝
+//                                                         
+
+/**
  * Computes the p-value for a given distribution and observed statistic.
  * The p-value is "the probability of observing a value as extreme as the observed
  * statistic or more, assuming the null hypothesis is true". Typically, the p-value
@@ -497,22 +643,46 @@ function _nullDistributionMean(sample, reps, point) {
  */
 function pValue(distribution, observedStat, direction) {
   switch (direction) {
-    case "two-sided":
-    case "two-tailed":
-      return _pValueTwoSided(distribution, observedStat);
     case "greater":
       return _pValueGreater(distribution, observedStat);
     case "less":
     case "smaller":
       return _pValueLess(distribution, observedStat);
+    case "two-sided":
+    case "two-tailed":
+      return _pValueTwoSided(distribution, observedStat);
     default:
       console.log("WARNING: invalid p-value direction.");
       return null;
   }
 }
 
+/**
+ * Computes the p-value for a greater-than test.
+ * @param {*} distribution 
+ * @param {*} observedStat 
+ * @returns 
+ */
+function _pValueGreater(distribution, observedStat) {
+  return distribution.filter(x => x >= observedStat).length / distribution.length;
+}
 
+/**
+ * Computes the p-value for a less-than test.
+ * @param {*} distribution 
+ * @param {*} observedStat 
+ * @returns 
+ */
+function _pValueLess(distribution, observedStat) {
+  return distribution.filter(x => x <= observedStat).length / distribution.length;
+}
 
+/**
+ * Computes the p-value for a two-sided test.
+ * @param {*} distribution 
+ * @param {*} observedStat 
+ * @returns 
+ */
 function _pValueTwoSided(distribution, observedStat) {
   // JL: I first assumed that the calculation of the p-value for a two-sided test
   // would be figuring out which side the observedStat is on and then calculating
@@ -540,13 +710,6 @@ function _pValueTwoSided(distribution, observedStat) {
   return Math.min(leftTail, rightTail) * 2;
 }
 
-function _pValueGreater(distribution, observedStat) {
-  return distribution.filter(x => x >= observedStat).length / distribution.length;
-}
-
-function _pValueLess(distribution, observedStat) {
-  return distribution.filter(x => x <= observedStat).length / distribution.length;
-}
 
 
 
@@ -566,8 +729,13 @@ function _pValueLess(distribution, observedStat) {
 
 
 
-
-
+// ███████╗██╗  ██╗██████╗  ██████╗ ██████╗ ████████╗
+// ██╔════╝╚██╗██╔╝██╔══██╗██╔═══██╗██╔══██╗╚══██╔══╝
+// █████╗   ╚███╔╝ ██████╔╝██║   ██║██████╔╝   ██║   
+// ██╔══╝   ██╔██╗ ██╔═══╝ ██║   ██║██╔══██╗   ██║   
+// ███████╗██╔╝ ██╗██║     ╚██████╔╝██║  ██║   ██║   
+// ╚══════╝╚═╝  ╚═╝╚═╝      ╚═════╝ ╚═╝  ╚═╝   ╚═╝   
+//                                                   
 
 // A quick library of statistical functions in JavaScript.
 // Mostly for me to understant the concepts, 
@@ -598,5 +766,6 @@ module.exports = {
   randomStandardNormal,
   randomStandardNormalSamples,
   nullDistribution,
+  nullDistributionMulti,
   pValue
 };
