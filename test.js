@@ -1,9 +1,20 @@
 // I should probably try http://simple-statistics.github.io/docs/
 
-// const nj = require('numjs');
 const fs = require('fs');
 const csv = require('csv-parse/sync');
 const stats = require('./stats.js');
+const print = console.log;
+
+/**
+ * Applies the function f to the entire array, returning the result.
+ * This is equivalent to passing the entire array as an argument to the function.
+ * @param {*} f 
+ * @returns 
+ */
+Array.prototype.compute = (f) => f(this);
+
+
+
 
 
 const colleges = csv.parse(fs.readFileSync('sample_data/colleges.csv', 'utf8'), {
@@ -109,4 +120,121 @@ const medianPrice = stats.median(prices);
 console.log("Saratoga house price median: ", medianPrice);
 const price_median_bs_dist = stats.bootstrap(prices, 1000, stats.median);
 console.log("Saratoga BOOTSTRAPPED house price MEDIAN: ", stats.mean(price_median_bs_dist));
+console.log("");
+console.log("");
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// ██╗    ██╗██████╗  █████╗ ██████╗       ██╗   ██╗██████╗      █████╗ 
+// ██║    ██║██╔══██╗██╔══██╗██╔══██╗      ██║   ██║██╔══██╗    ██╔══██╗
+// ██║ █╗ ██║██████╔╝███████║██████╔╝█████╗██║   ██║██████╔╝    ╚██████║
+// ██║███╗██║██╔══██╗██╔══██║██╔═══╝ ╚════╝██║   ██║██╔═══╝      ╚═══██║
+// ╚███╔███╔╝██║  ██║██║  ██║██║           ╚██████╔╝██║          █████╔╝
+//  ╚══╝╚══╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝            ╚═════╝ ╚═╝          ╚════╝ 
+//                                                                      
+// Replication of the class wrap-up 9 exercise
+
+// PRE-WRAP-UP 9 EXERCISE
+// A few small considerations before starting the exercise...
+
+// RANDOM NUMBERS
+print("RANDOM NUMBERS")
+let randomSample = Array.from({length: 100000}, Math.random);
+print("Math.random(): ", randomSample.slice(0, 10));
+print("  Extremes: ", stats.extremes(randomSample));
+print("  Mean of random sample: ", stats.mean(randomSample));
+print("  Standard deviation of random sample: ", stats.standardDeviation(randomSample));
+print();
+
+// Pseudo-random number generators (PRNGs) in JavaScript:
+//  Math.random() cannot be seeded, so I implemented a simple PRNG that can be seeded.
+stats.randomSeed(1000);
+randomSample = Array.from({length: 100000}, stats.random);
+print("SplitMix32: ", randomSample.slice(0, 10));
+print("  Extremes: ", stats.extremes(randomSample));
+print("  Mean of random sample: ", stats.mean(randomSample));
+print("  Standard deviation of random sample: ", stats.standardDeviation(randomSample));
+// The first value of the sequence above should be 0.2110681121... for seed 1000
+
+
+// RANDOM STANDARD NORMAL NUMBERS
+// Generating random standard normal numbers using the Box-Muller transform.
+stats.randomSeed(Date.now() * Math.random());
+randomSample = Array.from({length: 100000}, stats.randomStandardNormal);
+print("Random Standard Normal: ", randomSample.slice(0, 10));
+print("  Extremes: ", stats.extremes(randomSample));
+print("  Mean of random sample: ", stats.mean(randomSample));
+print("  Standard deviation of random sample: ", stats.standardDeviation(randomSample));
+
+// This is the foundation of null distributions:
+const test_null_distribution = stats.randomStandardNormalSamples(1000, 10, 2.5);
+print("test: ", test_null_distribution.slice(0, 10));
+print("  Extremes: ", stats.extremes(test_null_distribution));
+print("  Mean of test: ", stats.mean(test_null_distribution));
+print("  Standard deviation of test: ", stats.standardDeviation(test_null_distribution));
+print("");
+print()
+print()
+
+
+
+
+print("WRAP-UP 9 EXERCISE");
+
+print("1. Let's investigate mean house living area (`livingArea`) based on the sample of houses in the `SaratogaHouses` dataset. Suppose we are interested in investigating whether 5-bedroom houses in Saratoga County have mean living area different from 2700 sq. ft.");
+
+print("b) Compute the observed test statistic. Interpret the observed test statistic in the context of the data.");
+
+const livingAreas = saratogaHouses
+    .filter(house => parseInt(house['bedrooms']) == 5)
+    .map(house => parseInt(house['livingArea']))
+
+print("  Living areas of 5-bedroom houses: ", livingAreas);
+print("  Extremes: ", stats.extremes(livingAreas));
+print("  Mean living area of 5-bedroom houses: ", stats.mean(livingAreas));
+print("  Standard deviation of living area of 5-bedroom houses: ", stats.standardDeviation(livingAreas));
+print("");
+
+
+
+
+print("c) Generate the null distribution and compute a $p$-value. Interpret the $p$-value in the context of the data.")
+print("  JLX: creating a null distribution here means creating a random sample of living areas whose mean is 2700 sqft (as per the above).")
+print()
+
+
+// JL: Originally, I thought this was done by generating random standard normal numbers and then transforming them to the desired mean and standard deviation, the desired SD being the samepl as the original sample. 
+// let null_dist = stats.randomStandardNormalSamples(1000, 2700, 100);
+// print("nullDistribution: ", null_dist);
+// print("  Extremes: ", stats.extremes(null_dist));
+// print("  Mean of null distribution: ", stats.mean(null_dist));
+// print("  Standard deviation of null distribution: ", stats.standardDeviation(null_dist));
+// print("");
+
+
+// JL: however, digging a little deeper, turns out the `infer` package in R does it by bootstrapping the original sample and shifting the values by the mean differnce! 
+// Doing this yields similar results to what I got in R.
+let null_dist = stats.nullDistribution(livingAreas, 1000, {
+    type: "point",
+    point: 2700,
+    statistic: "mean"
+});
+print("nullDistribution: ", null_dist);
+print("  Extremes: ", stats.extremes(null_dist));
+print("  Mean of null distribution: ", stats.mean(null_dist));
+print("  Standard deviation of null distribution: ", stats.standardDeviation(null_dist));
+print("");
+
+
 

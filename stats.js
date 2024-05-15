@@ -1,26 +1,19 @@
-// A quick library of statistical functions in JavaScript.
-// Mostly for me to understant the concepts, 
-// all of this is probably super implemented in NP. 
-module.exports = {
-  sum,
-  mean,
-  median,
-  meanDeviation,
-  variance,
-  standardDeviation,
-  covariance,
-  correlation,
-  leastSquaresRegression,
-  linearRegressionModel,
-  rSquared,
-  randomNumbers, 
-  sample,
-  sampleWithReplacement, 
-  bootstrapSamples,
-  bootstrap,
-  confidenceInterval,
-  confidenceIntervalSE
-};
+const TAU = 2 * Math.PI;
+const SQRT_TAU = Math.sqrt(TAU);
+
+
+// A function that given an array of values, returns another
+// array with the [min, max] values
+function extremes(array) {
+  let min = array[0];
+  let max = array[0];
+  for (let i = 1; i < array.length; i++) {
+    if (array[i] < min) min = array[i];
+    if (array[i] > max) max = array[i];
+  }
+  return [min, max];
+}
+
 
 
 /**
@@ -28,7 +21,7 @@ module.exports = {
  * @param {*} x 
  * @returns 
  */
-function sum(x) { 
+function sum(x) {
   return x.reduce((acc, val) => acc + val, 0);
 }
 
@@ -66,7 +59,7 @@ function median(x) {
 function meanDeviation(x) {
   const avg = mean(x);
   // return mean(array.map(value => Math.abs(value - avg)));
-  
+
   let sum = 0;
   for (let i = 0; i < x.length; i++) {
     sum += Math.abs(x[i] - avg);
@@ -172,7 +165,10 @@ function leastSquaresRegression(x, y) {
   // // m = cor(x, y) * (σy / σx)
   // console.log("Alt B1: " + (correlation(x, y) * (standardDeviation(y) / standardDeviation(x))));
 
-  return { m, b };
+  return {
+    m,
+    b
+  };
 }
 
 
@@ -233,21 +229,26 @@ function rSquared(x, y, model) {
   // const r2Alt = variance(x.map(model)) / variance(y);
   // console.log("R2: " + r2);
   // console.log("R2 alt: " + r2Alt);
-  
-  return { r2, r2adj };
+
+  return {
+    r2,
+    r2adj
+  };
 }
 
-/**
- * Returns an array of random numbers between `min` and `max`.
- * @param {*} n 
- * @param {*} min 
- * @param {*} max 
- * @returns 
- */
-function randomNumbers(n, min, max) {
-  const mag = max - min;
-  return Array.from({ length: n }, () => Math.random() * mag + min);
-}
+// /**
+//  * Returns an array of random numbers between `min` and `max`.
+//  * @param {*} n 
+//  * @param {*} min 
+//  * @param {*} max 
+//  * @returns 
+//  */
+// function randomNumbers(n, min, max) {
+//   const mag = max - min;
+//   return Array.from({
+//     length: n
+//   }, () => Math.random() * mag + min);
+// }
 
 /**
  * Returns a random sample of `n` elements from an array.
@@ -278,7 +279,9 @@ function sample(array, n) {
  * @returns 
  */
 function sampleWithReplacement(array, n) {
-  return Array.from({ length: n }, () => array[Math.floor(Math.random() * array.length)]);
+  return Array.from({
+    length: n
+  }, () => array[Math.floor(Math.random() * array.length)]);
 }
 
 
@@ -289,7 +292,9 @@ function sampleWithReplacement(array, n) {
  * @returns 
  */
 function bootstrapSamples(array, reps) {
-  return Array.from({ length: reps }, () => sampleWithReplacement(array, array.length));
+  return Array.from({
+    length: reps
+  }, () => sampleWithReplacement(array, array.length));
 }
 
 
@@ -309,7 +314,8 @@ function bootstrap(array, reps, statistic) {
 /**
  * Returns the confidence interval of a statistic.
  * The confidence interval is computed as the `level` quantile
- * of the sorted array of statistics.
+ * of the sorted array of statistics. This is equivalent to
+ * the percentile method of computing confidence intervals.
  * @param {*} array 
  * @param {*} level 
  * @returns 
@@ -318,7 +324,11 @@ function confidenceInterval(array, level) {
   const sorted = array.slice().sort((a, b) => a - b);
   const lower = sorted[Math.floor((1 - level) / 2 * array.length)];
   const upper = sorted[Math.floor((1 + level) / 2 * array.length)];
-  return { lower, upper, level };
+  return {
+    lower,
+    upper,
+    level
+  };
 }
 
 
@@ -346,3 +356,186 @@ function confidenceIntervalSE(array, level, pointEstimate) {
     marginError
   };
 }
+
+
+
+// Local var for seed state and init it. 
+let currentSeed = Date.now() * Math.random();
+
+/**
+ * A function that generates uniformly distributed pseudo-random numbers
+ * using the SplitMix32 algorithm. As opposed to Math.random(), 
+ * it can be controlled by a seed. See `randomSeed()`.
+ * See https://stackoverflow.com/a/47593316/1934487
+ * @returns 
+ */
+function random() {
+  currentSeed |= 0;
+  currentSeed = currentSeed + 0x9e3779b9 | 0;
+  let t = currentSeed ^ currentSeed >>> 16;
+  t = Math.imul(t, 0x21f0aaad);
+  t = t ^ t >>> 15;
+  t = Math.imul(t, 0x735a2d97);
+  return ((t = t ^ t >>> 15) >>> 0) / 4294967296;
+}
+
+/**
+ * Sets the seed for the this module's pseudo-random number generators (PRNGs),
+ * including `random()` and `randomSN()`.
+ * @param {*} seed 
+ */
+function randomSeed(seed) {
+  currentSeed = seed;
+}
+
+
+/**
+ * Returns a random number from a standard normal distribution.
+ * Values will have a mean of 0, a standard deviation of 1, and will follow
+ * a bell-shaped curve. The range is theoretically unbound, but most values (99.7%)
+ * will be between -3 and 3.
+ * Internally, uses the Box-Muller transform to go from a uniform random number
+ * in the range (0, 1) to a standard normal random number.
+ * @returns 
+ */
+function randomStandardNormal() {
+  let u1 = 0, u2 = 0;
+
+  // Avoid the zero endpoint
+  while(u1 === 0) u1 = random(); 
+  while(u2 === 0) u2 = random();
+
+  let z0 = Math.sqrt(-2.0 * Math.log(u1)) * Math.cos(2.0 * Math.PI * u2);
+  // let z1 = Math.sqrt(-2.0 * Math.log(u1)) * Math.sin(2.0 * Math.PI * u2); 
+  // z1 can be used if generating pairs but for simplicity, we use z0
+
+  return z0; // This return value is a standard normally distributed number
+}
+
+
+/**
+ * Create an array of n random numbers with a standard normal distribution
+ * with target mean and standard deviation values. 
+ * @param {*} n 
+ * @param {*} targetMean 
+ * @param {*} targetStdDev 
+ * @returns 
+ */
+function randomStandardNormalSamples(n, targetMean, targetStdDev) {
+  // Use a linear model to scale and shift the SN random numbers
+  const linear = linearRegressionModel({m: targetStdDev, b: targetMean});
+  const rans = Array.from({length: n}, randomStandardNormal).map(linear);
+  return rans;
+
+  // // Older version
+  // let numbers = [];
+  // for (let i = 0; i < n; i++) {
+  //     let standardNormal = randomStandardNormal();
+  //     let scaledShiftedNumber = standardNormal * targetStdDev + targetMean;
+  //     numbers.push(scaledShiftedNumber);
+  // }
+  // return numbers;
+}
+
+
+
+
+
+
+/**
+ * Creates a null hypothesis distribution for the mean of a given data sample,
+ * computed based on a specific point value.
+ * The function will generate bootstrapped samples based on the original sample,
+ * shift their value based on the mean differences, and return the mean of each.
+ * @param {*} sample 
+ * @param {*} reps 
+ * @param {*} point 
+ * @returns 
+ */
+function nullDistributionMean(sample, reps, point) {
+  const delta = point - mean(sample);
+  return bootstrapSamples(sample, reps)
+    .map(sample => sample.map(x => x + delta))
+    .map(mean);
+}
+
+
+/**
+ * Creates a null hypothesis distribution for a given data sample,
+ * computed based on specific options. 
+ * @param {*} sample 
+ * @param {*} reps 
+ * @param {*} opts An object with the following properties:
+ * - type: "point"
+ * - point: The point value to use
+ * - statistic: "mean"
+ * @returns 
+ */
+function nullDistribution(sample, reps, opts) {
+  if (opts.type === "point") {
+    if (opts.point === null) {
+      throw new Error("Missing point value");
+    }
+
+    if (opts.statistic === "mean") {
+      return nullDistributionMean(sample, reps, opts.point);
+    }
+  }
+
+  console.log("WARNING: invalid null distribution options.");
+  return [];
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// A quick library of statistical functions in JavaScript.
+// Mostly for me to understant the concepts, 
+// all of this is probably super implemented in NP. 
+module.exports = {
+  TAU,
+  SQRT_TAU,
+  extremes,
+  sum,
+  mean,
+  median,
+  meanDeviation,
+  variance,
+  standardDeviation,
+  covariance,
+  correlation,
+  leastSquaresRegression,
+  linearRegressionModel,
+  rSquared,
+  sample,
+  sampleWithReplacement,
+  bootstrapSamples,
+  bootstrap,
+  confidenceInterval,
+  confidenceIntervalSE,
+  randomSeed,
+  random,
+  randomStandardNormal,
+  randomStandardNormalSamples,
+  nullDistribution,
+};
