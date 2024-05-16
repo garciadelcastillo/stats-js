@@ -11,7 +11,10 @@ const print = console.log;
  * @param {*} f 
  * @returns 
  */
-Array.prototype.compute = (f) => f(this);
+Array.prototype.compute = function (f) {
+    return f(this);
+}
+// Array.prototype.compute = (f) => f(this);  // interesting! `this` is not defined here! MDN docs: "Arrow functions don't have their own bindings to this, arguments, or super, and should not be used as methods."
 
 
 
@@ -232,7 +235,7 @@ print()
 // JL: however, digging a little deeper, turns out the `infer` package in R does it by bootstrapping the original sample and shifting the values by the mean differnce! 
 // Doing this yields similar results to what I got in R.
 let null_dist = stats.nullDistribution(livingAreas, 1000, {
-    type: "point",
+    null: "point",
     point: 2700,
     statistic: "mean"
 });
@@ -250,5 +253,90 @@ print(`The two-sided $p$-value is ${p_value}. If the mean living area for all 5-
 print("");
 print("");
 
+
 print("2. Do these data suggest that houses which include waterfront are on average more expensive than those that do not? Conduct a hypothesis test and summarize the findings.")
 
+test_stat = saratogaHouses
+    .filter(house => house['waterfront'] == "Yes")
+    .map(house => parseInt(house['price']))
+    .compute(stats.mean) -
+    saratogaHouses
+    .filter(house => house['waterfront'] == "No")
+    .map(house => parseInt(house['price']))
+    .compute(stats.mean);
+print("  Observed mean difference in price of waterfront houses: ", test_stat);
+
+null_dist = stats.nullDistributionMulti([
+    saratogaHouses.map(house => parseInt(house['price'])), // response var
+    saratogaHouses.map(house => house['waterfront']) // explanatory var  
+], 1000, {
+    null: "independence",
+    statistic: "diff in means",
+    types: ["numerical", "categorical"], // in [res, exp] order
+    order: ["Yes", "No"] // order of categories for diff in means: [0] - [1]
+});
+p_value = stats.pValue(null_dist, test_stat, "greater");
+
+print("  nullDistribution: ", null_dist);
+print("  p-value: ", p_value);
+print();
+print("The null distribution de-correlates waterfront var from price by combining all possible values from the samples, i.e. any observed house (WF or not) can have any observed price. The mean of the null dist is centers around 0, which makes sense if there is no correlation. The test stat (diff in means) is at ~160k. The p-value of this test stat is 0. This suggests that, if $H_0$ were true, there would be a 0 probability of the diff in mean prices between WF and no WF being equal or larger than ~160k. This gives us evidence to reject $H_0$ and accept the hypothesis (at alpha = 0.05) that WF houses are on average more expensive than not, from the sample. ");
+print();
+print();
+
+
+
+print("3. Do these data suggest that houses that are a new construction are more likely to have central air than houses which are not? Conduct a hypothesis test and summarize your findings.");
+
+
+print("  Number of houses NEW construction: ", saratogaHouses.filter(house => house['newConstruction'] == "Yes").length);
+print("  Number of houses OLD construction: ", saratogaHouses.filter(house => house['newConstruction'] == "No").length);
+
+// This was entirely co-piloted lol... my job is going to be SO displaced 😅
+test_stat = saratogaHouses
+    .filter(house => house['centralAir'] == "Yes" && house['newConstruction'] == "Yes")
+    .length /
+    saratogaHouses
+    .filter(house => house['newConstruction'] == "Yes")
+    .length -
+    saratogaHouses
+    .filter(house => house['centralAir'] == "Yes" && house['newConstruction'] == "No")
+    .length /
+    saratogaHouses
+    .filter(house => house['newConstruction'] == "No")
+    .length;
+print("  Observed difference in proportions of central air in new construction vs not: ", test_stat);
+print();
+
+
+print("JLX: This is a test of proportions. We will use the difference in proportions as the test statistic. The null hypothesis is that the proportion of houses with central air is the same for new and old construction houses. The alternative hypothesis is that the proportion of houses with central air is higher for new construction houses than for old construction houses. We will use a one-sided test to test this hypothesis. The test statistic is the difference in proportions of houses with central air between new and old construction houses. We will use a significance level of 0.05.");
+print();
+print("JLX: the null distribution is built permutating all possible combinations of new/old construction and yes/no AC. We measure ratio differences and compute p-value.");
+print();
+
+null_dist = stats.nullDistributionMulti([
+    saratogaHouses.map(house => house['centralAir']) // response var
+    .map(val => val == "Yes" ? "AC" : "NoAC"),
+    saratogaHouses.map(house => house['newConstruction']) // explanatory var  
+], 1000, {
+    null: "independence",
+    statistic: "diff in proportions",
+    order: [
+        ["AC", "NoAC"],
+        ["Yes", "No"]
+    ] // order of categories for diff in props for exp var: [0] - [1]
+});
+p_value = stats.pValue(null_dist, test_stat, "greater");
+
+print("  nullDistribution: ", null_dist);
+print("  Mean of null distribution: ", stats.mean(null_dist));
+print("  Standard deviation of null distribution: ", stats.standardDeviation(null_dist));
+print("  p-value: ", p_value);
+if (p_value < 0.05) {
+    print(`Since the p-value ${p_value} is less than 0.05, we reject the null hypothesis and conclude that the proportion of houses with central air is higher for new construction houses than for old construction houses.`);
+} else {
+    print(`Since the p-p-value ${p_value} is greater than or equal to 0.05, we cannot reject the null hypothesis (nor confirm it).`);
+}
+print();
+print();
+print();

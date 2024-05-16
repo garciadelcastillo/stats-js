@@ -69,6 +69,32 @@ function median(x) {
 }
 
 /**
+ * Returns the mode of a list of elements, i.e. the element that appears
+ * the most times in the list, and the number of times it appears.
+ * @param {*} array 
+ * @returns 
+ */
+function mode(array) {
+  let counter = {};
+  let mode = [];
+  let max = 0;
+  for (let i = 0; i < array.length; i++) {
+    let el = array[i];
+    if (counter[el] == null) counter[el] = 1;
+    else counter[el]++;
+    if (counter[el] > max) {
+      mode = [el];
+      max = counter[el];
+    } else if (counter[el] === max) {
+      mode.push(el);
+      max = counter[el];
+    }
+  }
+  return { mode, max };
+}
+
+
+/**
  * Computes the average deviation of a list of numbers,
  * computed as Σ|xi - x̄| / n
  * @param {*} x 
@@ -111,6 +137,41 @@ function variance(x) {
 function standardDeviation(array) {
   return Math.sqrt(variance(array));
 }
+
+
+/**
+ * Returns a list of unique elements in an array.
+ * @param {*} array 
+ * @returns 
+ */
+function unique(array) {
+  // https://stackoverflow.com/questions/1960473/get-all-unique-values-in-a-javascript-array-remove-duplicates
+  // If the index of the element is not itself, it must be a duplicate
+  return array.filter((value, index, self) => self.indexOf(value) === index);
+}
+
+
+/**
+ * Returns the proportion of a value in an array.
+ * @param {*} array 
+ * @param {*} value 
+ * @returns 
+ */
+function ratio(array, value) {
+  let count = 0;
+  for (let i = 0; i < array.length; i++) {
+    if (array[i] === value) count++;
+  }
+  return count / array.length;
+}
+
+
+
+
+
+
+
+
 
 
 
@@ -568,7 +629,7 @@ function _nullDistributionMean(sample, reps, point) {
  * @param {*} opts Options objcet with the following properties:
  * {
     null: "independence",
-    statistic: "diff in means",
+    statistic: "diff in means" | "diff in ratios" "diff in proportions"
     types: ["numerical", "categorical"],  // in [res, exp] order
     order: (unique values of the cat variable in [0] - [1] order),
     }
@@ -576,8 +637,13 @@ function _nullDistributionMean(sample, reps, point) {
  */
 function nullDistributionMulti(samples, reps, opts) {
   if (opts.null === "independence") {
-    if (opts.statistic === "diff in means") {
-      return _nullDistributionPermutationDiffMeans(samples, reps, opts);
+    switch(opts.statistic) {
+      case "diff in means":
+        return _nullDistributionPermutationDiffMeans(samples, reps, opts);
+        
+      case "diff in proportions":
+      case "diff in ratios":
+        return _nullDistributionPermutationDiffProportions(samples, reps, opts);
     }
   }
 
@@ -618,6 +684,53 @@ function _nullDistributionPermutationDiffMeans(samples, reps, opts) {
 
   return diffs;
 }
+
+
+/**
+ * Computes the null hypothesis distribution for the difference in proportions
+ * of a multi-variable data sample, using a permutation test.
+ * Works for two binary categorical variables.
+ * @param {*} samples Nested array of [res, exp] samples
+ * @param {*} reps 
+ * @param {*} opts 
+ * @returns 
+ */
+function _nullDistributionPermutationDiffProportions(samples, reps, opts) {
+  // We assume two binary categorical samples for now
+
+  // Generate the permutation distribution
+  const diffs = Array.from({
+    length: reps
+  }, () => {
+    // Randomly permute the samples to de-corrlate them
+    // i.e. making their values independent of each other
+    const permuted = _permuteSamples(samples);
+
+    // Group variables based on explanatory variable
+    const exp0 = permuted[0].filter((_, i) => permuted[1][i] === opts.order[1][0]);
+    const exp1 = permuted[0].filter((_, i) => permuted[1][i] === opts.order[1][1]);
+
+    // For each group, compute the ratios of the categorical response variable
+    const ratio0 = exp0.filter(x => x === opts.order[0][0]).length / exp0.length;
+    const ratio1 = exp1.filter(x => x === opts.order[0][0]).length / exp1.length;
+
+    return ratio0 - ratio1;
+  });
+  return diffs;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -747,9 +860,12 @@ module.exports = {
   sum,
   mean,
   median,
+  mode,
   meanDeviation,
   variance,
   standardDeviation,
+  unique,
+  ratio,
   covariance,
   correlation,
   leastSquaresRegression,
