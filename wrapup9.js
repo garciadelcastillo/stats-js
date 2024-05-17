@@ -468,19 +468,25 @@ print("Correlation between price per sqft and age: ", correlation);
 print("Looks like there is not much correlation between price per sqft and age. The correlation is close to 0.0. This means that the price per sqft does not depend on the age of the house.");
 print();
 print();
+print();
+print();
+print();
 
 
 
+
+let size_threshold = 3250;
 let target_value = 130;
-print("Q: given the Saratoga housing data, test if the average price per square foot is below $" + target_value + ". Use a significance level of 0.05.");
-print(`STEPS: 
-- We first calculate the observed statistic, i.e. the mean price per square foot.
-- For the set significance level alpha, we calculate the critical value.
-- We then generate a null distribution of the target mean price per square foot.
-- We then calculate the p-value of the observed statistic.
-- We then compare the p-value with the significance level alpha to determine if we reject the null hypothesis or not.  
-`);
+significance_level = 0.05;
+print(`Q: given the Saratoga housing data, test if the average price per square foot for houses larger than ${size_threshold} is below $${target_value}. Use a significance level of 0.05.`);
+print(`Before we get hands-on, let's look at the data first.`)
 
+
+let large_houses = saratogaHouses.filter(row => parseInt(row.livingArea) > size_threshold);
+print(`Found ${large_houses.length} houses with size greater than ${size_threshold}.`);
+print();
+
+price_per_sqft = large_houses.map(row => parseInt(row.price) / parseInt(row.livingArea));
 // print(price_per_sqft)
 plotHistogram(price_per_sqft, {
     title: "Price per SqFt: observed distribution",
@@ -492,69 +498,39 @@ plotHistogram(price_per_sqft, {
     decimals: 0,
     // logErrors: true,
 });
-test_statistic = stats.mean(price_per_sqft);
-significance_level = 0.05;
-print("Test_statistic: ", test_statistic);
-print("Mean of price per sqft: ", stats.mean(price_per_sqft));
-print("Standard deviation of price per sqft: ", stats.standardDeviation(price_per_sqft));
-print();
 
-null_dist = stats.nullDistribution(price_per_sqft, 1000, {
-    null: "point",
-    point: target_value,
-    statistic: "mean"
-});
-// print("  nullDistribution: ", null_dist);
-plotHistogram(null_dist, {
-    title: "Price per SqFt: null dist for $200",
-    color: "marine",
-    binWidth: 10,
-    binStart: 0,
-    binEnd: 300,
-    // trimEnds: true,
-    decimals: 0,
-    // logErrors: true,
-});
-print("Mean of null distribution: ", stats.mean(null_dist));
-print("Standard deviation of null distribution: ", stats.standardDeviation(null_dist));
-print()
 
-critical_value = stats.quantile(null_dist, significance_level);
-print("Critical value: ", critical_value);
-
-p_value = stats.pValue(null_dist, test_statistic, "smaller");
-print("P-value: ", p_value);
-if (p_value < significance_level) {
-    print("Reject null hypothesis: The average price per square foot is below $200.00");
-} else {
-    print("Fail to reject null hypothesis: The average price per square foot is not below $200.00");
-}
-print();
-
-print(`In the above example, the null distribution had a very small SD. This is probably due to the fact that the sample size was quite large (about ${price_per_sqft.length}). This is why the null distribution was very narrow and the p-value was very small. This is why the null hypothesis was rejected. If the sample size was smaller, the null distribution would have been wider and the p-value would have been larger, making it harder to reject the null hypothesis?`);
-print(`Let's try reducing the sample size, by considering only houses above a certain size.`);
-print();
-print();
-
-let threshold = 3250;
-print(`Q: given the Saratoga housing data, test if the average price per square foot is below $${target_value}, for houses above ${threshold} sf. Use a significance level of 0.05.`);
-
-price_per_sqft = saratogaHouses
-    .filter(row => parseInt(row.livingArea) > threshold)
-    .map(row => parseInt(row.price) / parseInt(row.livingArea));
-print(`Found ${price_per_sqft.length} houses above ${threshold} sf.`);
-plotHistogram(price_per_sqft, {
-    title: "Price per SqFt: observed distribution",
+let boot_dist = stats.bootstrap(price_per_sqft, 1000, stats.mean);
+plotHistogram(boot_dist, {
+    title: "Price per SqFt: bootstrapped distribution",
     color: "orange",
-    binWidth: 10,
+    binWidth: 2.5,
     binStart: 0,
-    binEnd: 300,
-    // trimEnds: true,
-    decimals: 0,
+    // binEnd: 300,
+    trimEnds: true,
+    decimals: 1,
     // logErrors: true,
 });
+
+
+let ci = stats.confidenceInterval(boot_dist, 1 - significance_level);
+// print("Confidence interval: ", ci);
+print(`According to the bootstrapped sample distribution, we can be ${1 - significance_level} confident that the average price per square foot for houses larger than ${size_threshold} is between $${ci.lower} and $${ci.upper}.`);
+print();
+print();
+
+
+
+print(`STEPS TO VALIDATE THE HYPOTHESIS: 
+- We first calculate the observed statistic, i.e. the mean price per square foot.
+- For the set significance level alpha, we calculate the critical value.
+- We then generate a null distribution of the target mean price per square foot.
+- We then calculate the p-value of the observed statistic.
+- We then compare the p-value with the significance level alpha to determine if we reject the null hypothesis or not.  
+`);
+
+
 test_statistic = stats.mean(price_per_sqft);
-significance_level = 0.05;
 print("Test_statistic: ", test_statistic);
 print("Mean of price per sqft: ", stats.mean(price_per_sqft));
 print("Standard deviation of price per sqft: ", stats.standardDeviation(price_per_sqft));
@@ -565,33 +541,38 @@ null_dist = stats.nullDistribution(price_per_sqft, 1000, {
     point: target_value,
     statistic: "mean"
 });
-data = plotHistogram(null_dist, {  
+histogram_data = plotHistogram(null_dist, {
     title: "Price per SqFt: null dist for $" + target_value,
     color: "marine",
-    decimals: 0,
-    binWidth: 10,
+    binWidth: 2.5,
     binStart: 0,
-    binEnd: 300,
-    // binWidth: 2.5,
-    // binStart: 110,
-    // binEnd: 150,
+    // binEnd: 300,
+    trimEnds: true,
+    decimals: 1,
+    // logErrors: true,
 });
-// print(data)
+// print(histogram_data);
 print("Mean of null distribution: ", stats.mean(null_dist));
 print("Standard deviation of null distribution: ", stats.standardDeviation(null_dist));
 print()
 
 critical_value = stats.quantile(null_dist, significance_level);
-print("Critical value: ", critical_value);
+print(`Critical value for significance level ${significance_level}: `, critical_value);
 
 p_value = stats.pValue(null_dist, test_statistic, "smaller");
 print("P-value: ", p_value);
+print(`If Saratoga houses over ${size_threshold} sf DO NOT have an average price per square foot BELOW $${target_value}, then the probability of their average price being $${test_statistic} is ${p_value}.`);
+if (p_value < significance_level) {
+    print("ANSWER: we reject null hypothesis: The average price per square foot is below $" + target_value + ", for houses above " + size_threshold + " sf.");
+} else {
+    print("ANSWER: we fail to reject null hypothesis: The average price per square foot is not below $" + target_value + ", for houses above " + size_threshold + " sf.");
+}
+print();
+print();
+print();
+print();
+print();
 print();
 
-if (p_value < significance_level) {
-    print("Reject null hypothesis: The average price per square foot is below $" + target_value + ", for houses above " + threshold + " sf.");
-} else {
-    print("Fail to reject null hypothesis: The average price per square foot is not below $" + target_value + ", for houses above " + threshold + " sf.");
-}
-print("The null distribution was still super thin. I wonder if I am doing something wrong, or if this is expected. Maybe the observed distribution is not bell-shaped enough?");
-print("Oooooooh, something I was doing wrong too was comparing the actual price per sqft samples vs. a distribution of MEANS of these values... not fair!! ");
+
+

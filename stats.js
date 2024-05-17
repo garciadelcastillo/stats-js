@@ -525,7 +525,7 @@ function _permuteSamples(samples) {
  * of the sorted array of statistics. This is equivalent to
  * the percentile method of computing confidence intervals.
  * @param {*} array 
- * @param {*} level 
+ * @param {*} level A number between 0 and 1, typically 0.95
  * @returns 
  */
 function confidenceInterval(array, level) {
