@@ -12,6 +12,14 @@ const SQRT_TAU = Math.sqrt(TAU);
 
 // A function that given an array of values, returns another
 // array with the [min, max] values
+
+
+/**
+ * A function that given an array of values, returns another 
+ * array with the [min, max] values
+ * @param {*} array 
+ * @returns 
+ */
 function extremes(array) {
   let min = array[0];
   let max = array[0];
@@ -188,6 +196,56 @@ function quantile(array, q) {
     return sorted[base];
   }
 }
+
+
+
+// A function that takes an array of numbers and returns a histogram
+// of the data. The histogram should be an array of arrays, where each
+// subarray represents a bin, and contains the number of elements in
+// that bin. The bins should be of equal width, and the range of the
+// data should be divided into bins of that width.
+function histogram(array, binWidth, binStart, binEnd, options) {
+  const ends = extremes(array);
+  const min = binStart === undefined ? ends[0] : binStart;
+  const max = binEnd === undefined ? ends[1] : binEnd;
+  const width = binWidth || (max - min) / 10;
+  
+  // Init all bins to 0
+  let bins = [];
+  for (let i = 0; i < Math.ceil((max - min) / width); i++) {
+    bins.push(0);
+  }
+
+  // Fill them p
+  for (let i = 0; i < array.length; i++) {
+    const binIndex = Math.floor((array[i] - min) / width);
+    if (bins[binIndex] == null) bins[binIndex] = 0;
+    bins[binIndex]++;
+  }
+  
+  let factor = options.decimals !== undefined ? Math.pow(10, options.decimals) : 1;
+  let valArray = bins.map((value, index) => {
+    return {
+      label: Math.round(factor * (min + index * width)) / factor + "",
+      value: value
+    };
+  });
+
+  if (options.trimEnds) {
+    let it = valArray.length - 1;
+    while (valArray[it].value === 0) {
+      valArray.pop();
+      it--;
+    }
+    while (valArray[0].value === 0) {
+      valArray.shift();
+    }
+  }
+
+  return valArray;
+}
+
+
 
 
 
@@ -969,6 +1027,7 @@ module.exports = {
   unique,
   ratio,
   quantile,
+  histogram,
 
   covariance,
   correlation,

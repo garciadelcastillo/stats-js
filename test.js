@@ -1,10 +1,69 @@
 // I should probably try http://simple-statistics.github.io/docs/
-
+const print = console.log;
 const fs = require('fs');
 const csv = require('csv-parse/sync');
 const stats = require('./stats.js');
-const print = console.log;
 
+
+
+
+
+//  ██████╗██╗  ██╗ █████╗ ██████╗ ████████╗███████╗
+// ██╔════╝██║  ██║██╔══██╗██╔══██╗╚══██╔══╝██╔════╝
+// ██║     ███████║███████║██████╔╝   ██║   ███████╗
+// ██║     ██╔══██║██╔══██║██╔══██╗   ██║   ╚════██║
+// ╚██████╗██║  ██║██║  ██║██║  ██║   ██║   ███████║
+//  ╚═════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝   ╚═╝   ╚══════╝
+//                   
+
+// https://github.com/tool3/chartscii
+const Chartscii = require('chartscii');
+/**
+ * Default options for the Chartscii histogram.
+ */
+const default_chart_options = {
+    title: "Histogram",
+    width: 100,
+    height: 20,
+    theme: "pastel",
+    // color: "marine",
+    // color: "orange",
+    colorLabels: false,
+    // barSize: 5,
+    orientation: "vertical",
+    // orientation: "horizontal",
+    decimals: 4,
+    // percentage: true,
+};
+
+/**
+ * Wrapper function to plot a histogram using Chartscii.
+ * @param {*} data 
+ * @param {*} binSize 
+ * @param {*} start 
+ * @param {*} end 
+ * @param {*} options 
+ */
+const plotHistogram = function (data, binSize, start, end, options) {
+    const histogram_data = stats.histogram(data, binSize, start, end, {
+        trimEnds: options['trimEnds'],
+        decimals: options['decimals']
+    });
+    const chart_options = {
+        ...default_chart_options,
+        ...options
+    };
+    print((new Chartscii(histogram_data, chart_options)).create());
+}
+
+
+//  █████╗ ██████╗ ██████╗  █████╗ ██╗   ██╗███████╗
+// ██╔══██╗██╔══██╗██╔══██╗██╔══██╗╚██╗ ██╔╝██╔════╝
+// ███████║██████╔╝██████╔╝███████║ ╚████╔╝ ███████╗
+// ██╔══██║██╔══██╗██╔══██╗██╔══██║  ╚██╔╝  ╚════██║
+// ██║  ██║██║  ██║██║  ██║██║  ██║   ██║   ███████║
+// ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝   ╚═╝   ╚══════╝
+//                                                  
 /**
  * Applies the function f to the entire array, returning the result.
  * This is equivalent to passing the entire array as an argument to the function.
@@ -18,6 +77,15 @@ Array.prototype.compute = function (f) {
 
 
 
+
+
+// ███████╗████████╗ █████╗ ██████╗ ████████╗
+// ██╔════╝╚══██╔══╝██╔══██╗██╔══██╗╚══██╔══╝
+// ███████╗   ██║   ███████║██████╔╝   ██║   
+// ╚════██║   ██║   ██╔══██║██╔══██╗   ██║   
+// ███████║   ██║   ██║  ██║██║  ██║   ██║   
+// ╚══════╝   ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝   ╚═╝   
+//                                           
 
 
 const colleges = csv.parse(fs.readFileSync('sample_data/colleges.csv', 'utf8'), {
@@ -138,7 +206,7 @@ console.log("");
 
 
 
-
+print(`
 // ██╗    ██╗██████╗  █████╗ ██████╗       ██╗   ██╗██████╗      █████╗ 
 // ██║    ██║██╔══██╗██╔══██╗██╔══██╗      ██║   ██║██╔══██╗    ██╔══██╗
 // ██║ █╗ ██║██████╔╝███████║██████╔╝█████╗██║   ██║██████╔╝    ╚██████║
@@ -147,6 +215,7 @@ console.log("");
 //  ╚══╝╚══╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝            ╚═════╝ ╚═╝          ╚════╝ 
 //                                                                      
 // Replication of the class wrap-up 9 exercise
+`);
 
 // PRE-WRAP-UP 9 EXERCISE
 // A few small considerations before starting the exercise...
@@ -316,7 +385,7 @@ print();
 
 null_dist = stats.nullDistributionMulti([
     saratogaHouses.map(house => house['centralAir']) // response var
-        .map(val => val == "Yes" ? "AC" : "NoAC"),
+    .map(val => val == "Yes" ? "AC" : "NoAC"),
     saratogaHouses.map(house => house['newConstruction']) // explanatory var  
 ], 1000, {
     null: "independence",
@@ -347,23 +416,119 @@ print(`4. Suppose that the city government would like to assess whether there is
 a) If they survey a random sample of 100 residents and actually 75\% of all residents are in favor of the program, what is the power for a test of the one-sided alternative $H_A: p > 0.70$ conducted at the $\alpha = 0.10$ significance level? Do these results suggest that a larger sample size is advisable? Justify your reasoning.
 `);
 
+sample_size = 100;
+
 null_dist = stats.nullDistribution(
-    // We make up a null distribution of 100 samples of 100 residents, where 70% are in favor of the program
-    Array.from({ length: 100 }, (_, i) => i < 50 ? "Yes" : "No")
-, 1000, {
-    null: "point",
-    point: 0.70,
-    statistic: "prop",
-    success: "Yes"    // "Yes" is the success category for the proportion
-});
+    // We make up a null distribution of 100 samples.
+    // The Y/N distribution doesn't matter because we will be shifting 
+    // the proportion to 0.70 during the hypothesis generation
+    Array.from({
+        length: sample_size
+    }, (_, i) => i < sample_size / 2 ? "Yes" : "No"), 1000, {
+        null: "point",
+        point: 0.70,
+        statistic: "prop",
+        success: "Yes" // "Yes" is the success category for the proportion
+    });
 print("  nullDistribution: ", null_dist);
 print("  Mean of null distribution: ", stats.mean(null_dist));
 print("  Standard deviation of null distribution: ", stats.standardDeviation(null_dist));
 print()
 
-let significance_level = 0.10;
-let critical_value = stats.quantile(null_dist, 1 - significance_level);
+significance_level = 0.10;
+critical_value = stats.quantile(null_dist, 1 - significance_level);
 print(`  The critical value for the test at a significance level of ${significance_level} is ${critical_value}. If the test statistic is greater than this value, we will reject the null hypothesis.`);
+
+alt_dist = stats.nullDistribution(
+    Array.from({
+        length: sample_size
+    }, (_, i) => i < sample_size / 2 ? "Yes" : "No"), 1000, {
+        null: "point",
+        point: 0.75,
+        statistic: "prop",
+        success: "Yes" // "Yes" is the success category for the proportion
+    });
+print("  altDistribution: ", alt_dist);
+print("  Mean of alt distribution: ", stats.mean(alt_dist));
+print("  Standard deviation of alt distribution: ", stats.standardDeviation(alt_dist));
+
+// power = alt_dist.map(val => val >= critical_value)
+//     .reduce((acc, val) => acc + val, 0) / alt_dist.length;
+// print(`  The power of the test is ${power}. This means that the probability of correctly rejecting the null hypothesis when the true proportion is 0.75 is ${power}.`);
+
+// power = stats.pValue(alt_dist, critical_value, "greater");
+// print(`  The power of the test is ${power}. This means that the probability of correctly rejecting the null hypothesis when the true proportion is 0.75 is ${power}.`);
+
+power = stats.power(alt_dist, critical_value, "greater");
+print(`  The power of the test for sample size ${sample_size} is ${power}. This means that the probability of correctly rejecting the null hypothesis when the true proportion is 0.75 is:`, power);
+print()
+print()
+
+
+print(`b) What is the power if they increase the sample size to $n = 500$ and conduct a two-sided test with $H_A: p \neq 0.70$ at the $\alpha = 0.10$ significance level?`)
+
+stats.randomSeed(2023);
+sample_size = 500;
+
+null_dist = stats.nullDistribution(
+    Array.from({
+        length: sample_size
+    }, (_, i) => i < sample_size / 2 ? "Yes" : "No"), 1000, {
+        null: "point",
+        point: 0.70,
+        statistic: "prop",
+        success: "Yes" // "Yes" is the success category for the proportion
+    });
+
+critical_value = stats.quantile(null_dist, 1 - significance_level);
+
+alt_dist = stats.nullDistribution(
+    Array.from({
+        length: sample_size
+    }, (_, i) => i < sample_size / 2 ? "Yes" : "No"), 1000, {
+        null: "point",
+        point: 0.75,
+        statistic: "prop",
+        success: "Yes" // "Yes" is the success category for the proportion
+    });
+
+
+
+power = stats.power(alt_dist, [
+    stats.quantile(null_dist, significance_level / 2),
+    stats.quantile(null_dist, 1 - significance_level / 2)
+], "two-sided");
+
+// print("  nullDistribution: ", null_dist);
+plotHistogram(null_dist, 0.01, 0.60, 0.81, {
+    title: "Null Distribution",
+    color: "marine",
+    trimEnds: false,
+    decimals: 2,
+});
+print("  Mean of null distribution: ", stats.mean(null_dist));
+print("  Standard deviation of null distribution: ", stats.standardDeviation(null_dist));
+print()
+
+// print("  altDistribution: ", alt_dist);
+plotHistogram(alt_dist, 0.01, 0.60, 0.81, {
+    title: "Alt Distribution",
+    color: "orange",
+    trimEnds: false,
+    decimals: 2,
+})
+print("  Mean of alt distribution: ", stats.mean(alt_dist));
+print("  Standard deviation of alt distribution: ", stats.standardDeviation(alt_dist));
+
+print(`  The power of the test for sample size ${sample_size} is ${power}. This means that the probability of correctly rejecting the null hypothesis when the true proportion is 0.75 is:`, power);
+print()
+print()
+print()
+print()
+
+
+print("PERSONAL TESTS");
+
 
 
 
