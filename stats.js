@@ -859,7 +859,7 @@ function _pValueLess(distribution, observedStat) {
  * @param {*} observedStat 
  * @returns 
  */
-function _pValueTwoSided(distribution, observedStat) {
+function _pValueTwoSided(distribution, observedStat, options) {
   // JL: I first assumed that the calculation of the p-value for a two-sided test
   // would be figuring out which side the observedStat is on and then calculating
   // the proportion of values on the opposite side, equidistant to a null value
@@ -876,6 +876,7 @@ function _pValueTwoSided(distribution, observedStat) {
   //   leftTail = distribution.filter(x => x <= observedStat).length;
   //   rightTail = distribution.filter(x => x >= nullValue + d).length;
   // }
+  // // console.log(leftTail, rightTail, distribution.length);
   // return (leftTail + rightTail) / distribution.length;
 
   // However, it looks like the R `infer` package simply calculates it as
@@ -887,9 +888,47 @@ function _pValueTwoSided(distribution, observedStat) {
 }
 
 
+/**
+ * Computes the power of a statistical test. The power of a test is the probability
+ * of correctly rejecting the null hypothesis when it is false. It requires the 
+ * distribution of the test statistic under the **alternative hypothesis**, as well as
+ * the critical value for the test and the direction of the test.
+ * @param {*} distribution An array of values representing the distribution of the test statistic under the alternative hypothesis.
+ * @param {*} criticalValues A single value for a one-sided test, or an array of [left, right] values for a two-sided test. 
+ * @param {*} direction "greater" | "less","smaller" | "two-sided","two-tailed"
+ * @returns 
+ */
+function power(distribution, criticalValues, direction) {
+  switch (direction) {
+    case "greater":
+      return _pValueGreater(distribution, criticalValues);
+    case "less":
+    case "smaller":
+      return _pValueLess(distribution, criticalValues);
+    case "two-sided":
+    case "two-tailed":
+      // return _pValueTwoSided(distribution, criticalValue);  // the 2 * min(p-value) method wasn't working here, doing it manually for two input critical values
+      return _powerTwoSided(distribution, criticalValues);
+    default:
+      console.log("WARNING: invalid power direction.");
+      return null;
+  }
+}
 
 
-
+/**
+ * Computes the two-sided power of a statistical test by adding the left and right tails.
+ * @param {*} distribution 
+ * @param {*} criticalValues An array of [left, right] values 
+ * @returns 
+ */
+function _powerTwoSided(distribution, criticalValues) {
+  const leftTail = distribution.filter(x => x <= criticalValues[0]).length;
+  const rightTail = distribution.filter(x => x >= criticalValues[1]).length;
+  // console.log(criticalValues[0], criticalValues[1]);
+  // console.log(leftTail, rightTail, distribution.length);
+  return leftTail / distribution.length + rightTail / distribution.length;
+}
 
 
 
@@ -948,5 +987,6 @@ module.exports = {
   randomStandardNormalSamples,
   nullDistribution,
   nullDistributionMulti,
-  pValue
+  pValue,
+  power
 };
