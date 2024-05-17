@@ -204,6 +204,21 @@ function quantile(array, q) {
 // subarray represents a bin, and contains the number of elements in
 // that bin. The bins should be of equal width, and the range of the
 // data should be divided into bins of that width.
+
+
+/**
+ * A function that takes an array of numbers and returns a histogram
+ * of the data. The histogram should be an array of arrays, where each
+ * subarray represents a bin, and contains the number of elements in
+ * that bin. The bins should be of equal width, and the range of the
+ * data should be divided into bins of that width.
+ * @param {*} array 
+ * @param {*} binWidth 
+ * @param {*} binStart 
+ * @param {*} binEnd 
+ * @param {*} options 
+ * @returns 
+ */
 function histogram(array, binWidth, binStart, binEnd, options) {
   const ends = extremes(array);
   const min = binStart === undefined ? ends[0] : binStart;
@@ -216,13 +231,14 @@ function histogram(array, binWidth, binStart, binEnd, options) {
     bins.push(0);
   }
 
-  // Fill them p
+  // Fill them
   for (let i = 0; i < array.length; i++) {
     const binIndex = Math.floor((array[i] - min) / width);
     if (bins[binIndex] == null) bins[binIndex] = 0;
     bins[binIndex]++;
   }
   
+  // Structure the data as { label: "x", value: y }
   let factor = options.decimals !== undefined ? Math.pow(10, options.decimals) : 1;
   let valArray = bins.map((value, index) => {
     return {
@@ -231,6 +247,7 @@ function histogram(array, binWidth, binStart, binEnd, options) {
     };
   });
 
+  // Trim the ends from empty values if necessary
   if (options.trimEnds) {
     let it = valArray.length - 1;
     while (valArray[it].value === 0) {
