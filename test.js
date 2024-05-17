@@ -316,7 +316,7 @@ print();
 
 null_dist = stats.nullDistributionMulti([
     saratogaHouses.map(house => house['centralAir']) // response var
-    .map(val => val == "Yes" ? "AC" : "NoAC"),
+        .map(val => val == "Yes" ? "AC" : "NoAC"),
     saratogaHouses.map(house => house['newConstruction']) // explanatory var  
 ], 1000, {
     null: "independence",
@@ -340,3 +340,31 @@ if (p_value < 0.05) {
 print();
 print();
 print();
+
+
+print(`4. Suppose that the city government would like to assess whether there is broad support for launching a comprehensive affordable housing program. They plan to proceed with launching the program if there is evidence that over 70\% of residents are in favor of the program.
+
+a) If they survey a random sample of 100 residents and actually 75\% of all residents are in favor of the program, what is the power for a test of the one-sided alternative $H_A: p > 0.70$ conducted at the $\alpha = 0.10$ significance level? Do these results suggest that a larger sample size is advisable? Justify your reasoning.
+`);
+
+null_dist = stats.nullDistribution(
+    // We make up a null distribution of 100 samples of 100 residents, where 70% are in favor of the program
+    Array.from({ length: 100 }, (_, i) => i < 50 ? "Yes" : "No")
+, 1000, {
+    null: "point",
+    point: 0.70,
+    statistic: "prop",
+    success: "Yes"    // "Yes" is the success category for the proportion
+});
+print("  nullDistribution: ", null_dist);
+print("  Mean of null distribution: ", stats.mean(null_dist));
+print("  Standard deviation of null distribution: ", stats.standardDeviation(null_dist));
+print()
+
+let significance_level = 0.10;
+let critical_value = stats.quantile(null_dist, 1 - significance_level);
+print(`  The critical value for the test at a significance level of ${significance_level} is ${critical_value}. If the test statistic is greater than this value, we will reject the null hypothesis.`);
+
+
+
+

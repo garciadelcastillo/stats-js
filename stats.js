@@ -152,7 +152,9 @@ function unique(array) {
 
 
 /**
- * Returns the proportion of a value in an array.
+ * Returns the proportion of a value in an array, i.e. the ratio of the
+ * number of times the value appears in the array to the total number of
+ * elements in the array.
  * @param {*} array 
  * @param {*} value 
  * @returns 
@@ -166,6 +168,26 @@ function ratio(array, value) {
 }
 
 
+/**
+ * Returns the quantile of a list of numbers, i.e. the value below which
+ * a given proportion of the data falls. It will interpolate between the
+ * two closest values if the quantile does not fall on an integer index.
+ * @param {*} array 
+ * @param {*} q 
+ * @returns 
+ */
+function quantile(array, q) {
+  const sorted = array.sort((a, b) => a - b);
+  const pos = (sorted.length - 1) * q;
+  const base = Math.floor(pos);
+  const rest = pos - base;
+  if (sorted[base + 1] !== undefined) {
+    // This interpolates between the two closest values?
+    return sorted[base] + rest * (sorted[base + 1] - sorted[base]);
+  } else {
+    return sorted[base];
+  }
+}
 
 
 
@@ -466,6 +488,16 @@ function confidenceIntervalSE(array, level, pointEstimate) {
 }
 
 
+
+
+
+
+
+
+
+
+
+
 // ██████╗  █████╗ ███╗   ██╗██████╗  ██████╗ ███╗   ███╗
 // ██╔══██╗██╔══██╗████╗  ██║██╔══██╗██╔═══██╗████╗ ████║
 // ██████╔╝███████║██╔██╗ ██║██║  ██║██║   ██║██╔████╔██║
@@ -559,6 +591,12 @@ function randomStandardNormalSamples(n, targetMean, targetStdDev) {
 }
 
 
+
+
+
+
+
+
 // ███╗   ██╗██╗   ██╗██╗     ██╗     
 // ████╗  ██║██║   ██║██║     ██║     
 // ██╔██╗ ██║██║   ██║██║     ██║     
@@ -583,7 +621,7 @@ function randomStandardNormalSamples(n, targetMean, targetStdDev) {
  * @param {*} opts An object with the following properties:
  * - null: "point"
  * - point: The point value to use
- * - statistic: "mean"
+ * - statistic: "mean", "ratio"|"prop"
  * @returns 
  */
 function nullDistribution(sample, reps, opts) {
@@ -592,8 +630,12 @@ function nullDistribution(sample, reps, opts) {
       throw new Error("Missing point value");
     }
 
-    if (opts.statistic === "mean") {
-      return _nullDistributionMean(sample, reps, opts.point);
+    switch (opts.statistic) {
+      case "mean":
+        return _nullDistributionMean(sample, reps, opts);
+      case "ratio":
+      case "prop":
+        return _nullDistributionProportion(sample, reps, opts);
     }
   }
 
@@ -609,15 +651,36 @@ function nullDistribution(sample, reps, opts) {
  * shift their value based on the mean differences, and return the mean of each.
  * @param {*} sample 
  * @param {*} reps 
- * @param {*} point 
+ * @param {*} opts 
  * @returns 
  */
-function _nullDistributionMean(sample, reps, point) {
-  const delta = point - mean(sample);
+function _nullDistributionMean(sample, reps, opts) {
+  const delta = opts.point - mean(sample);
   return bootstrapSamples(sample, reps)
     .map(sample => sample.map(x => x + delta))
     .map(mean);
 }
+
+
+/**
+ * Creates a null hypothesis distribution for the ratio of a given data sample,
+ * computed based on a specific point value. For example, if the sample is 100 
+ * Yes/No answers at whichever ratio, and the target point is 70%, the function will
+ * generate bootstrapped samples based on the original sample, shift their value
+ * based on the ratio differences, and return the ratio of each.
+ * @param {*} sample 
+ * @param {*} reps 
+ * @param {*} opts 
+ * @returns 
+ */
+function _nullDistributionProportion(sample, reps, opts) {
+  const delta = opts.point - ratio(sample, opts.success);
+  return bootstrapSamples(sample, reps)
+    .map(sample => ratio(sample, opts.success))
+    .map(sample => sample + delta);
+}
+
+
 
 
 /**
@@ -866,6 +929,8 @@ module.exports = {
   standardDeviation,
   unique,
   ratio,
+  quantile,
+
   covariance,
   correlation,
   leastSquaresRegression,
