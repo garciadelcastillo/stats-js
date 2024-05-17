@@ -239,7 +239,7 @@ function histogram(array, options) {
     if (bins[binIndex] != null) bins[binIndex]++;
     else outOfBounds.push(array[i]);
   }
-  if (outOfBounds.length > 0) console.log("WARNING: " + outOfBounds.length + " values were outside of set histogram bounds: ", outOfBounds);
+  if (outOfBounds.length > 0 && options.logErrors) console.log("WARNING: " + outOfBounds.length + " values were outside of set histogram bounds: ", outOfBounds);
   
   // Structure the data as { label: "x", value: y }
   let factor = options.decimals !== undefined ? Math.pow(10, options.decimals) : 1;
@@ -249,8 +249,6 @@ function histogram(array, options) {
       value: value
     };
   });
-
-  // console.log(valArray);
 
   // Trim the ends from empty values if necessary
   if (options.trimEnds) {
@@ -311,7 +309,7 @@ function covariance(x, y) {
 
 
 /**
- * Returns the _sample_ coefficient of correlation `cor` of two lists of values,
+ * Returns the _sample_ coefficient of correlation `cor` or `r` of two lists of values,
  * computed as cor(x, y) = cov(x, y) / (σx * σy).
  * The correlation value can range from -1 to +1, 
  * with sign indicates the direction of the relationship,
