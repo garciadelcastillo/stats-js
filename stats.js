@@ -219,24 +219,27 @@ function quantile(array, q) {
  * @param {*} options 
  * @returns 
  */
-function histogram(array, binWidth, binStart, binEnd, options) {
+function histogram(array, options) {
   const ends = extremes(array);
-  const min = binStart === undefined ? ends[0] : binStart;
-  const max = binEnd === undefined ? ends[1] : binEnd;
-  const width = binWidth || (max - min) / 10;
+  const min = options.binStart === undefined ? ends[0] : options.binStart;
+  const max = options.binEnd === undefined ? ends[1] : options.binEnd;
+  const width = options.binWidth || (max - min) / 10;
   
   // Init all bins to 0
   let bins = [];
-  for (let i = 0; i < Math.ceil((max - min) / width); i++) {
+  let binCount = Math.ceil((max - min) / width);
+  for (let i = 0; i < binCount; i++) {
     bins.push(0);
   }
 
   // Fill them
+  let outOfBounds = [];
   for (let i = 0; i < array.length; i++) {
     const binIndex = Math.floor((array[i] - min) / width);
-    if (bins[binIndex] == null) bins[binIndex] = 0;
-    bins[binIndex]++;
+    if (bins[binIndex] != null) bins[binIndex]++;
+    else outOfBounds.push(array[i]);
   }
+  if (outOfBounds.length > 0) console.log("WARNING: " + outOfBounds.length + " values were outside of set histogram bounds: ", outOfBounds);
   
   // Structure the data as { label: "x", value: y }
   let factor = options.decimals !== undefined ? Math.pow(10, options.decimals) : 1;
@@ -246,6 +249,8 @@ function histogram(array, binWidth, binStart, binEnd, options) {
       value: value
     };
   });
+
+  // console.log(valArray);
 
   // Trim the ends from empty values if necessary
   if (options.trimEnds) {
