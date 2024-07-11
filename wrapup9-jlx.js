@@ -334,3 +334,5 @@ print(`We need a sample size of ${sample_size} to detect a difference of at leas
 print(`Or in other words, we need to test at least ${sample_size} people to have at least a ${100*target_power}% probability of rejecting the null hypothesis that people like Machina and the control software equally, and to be ${100*(1 - significance_level)}% confident that a least ${100*target_value}% people like Machina better.`);
 print();
 print("I did not test this one out anywhere... 🤷‍♂️");
+print();
+print("Something is wrong! If I increase the target power, the required sample size decreases. This is counterintuitive. I need to investigate this further. 🤔");
