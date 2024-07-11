@@ -313,7 +313,10 @@ function covariance(x, y) {
  * computed as cor(x, y) = cov(x, y) / (σx * σy).
  * The correlation value can range from -1 to +1, 
  * with sign indicates the direction of the relationship,
- * and the magnitude indicates the strength of the linear relationship.
+ * and the magnitude indicates the strength of the linear relationship:
+ * - 1: perfect positive linear relationship
+ * - 0: no linear relationship
+ * - -1: perfect negative linear relationship
  * @param {*} x 
  * @param {*} y 
  * @returns 
@@ -530,8 +533,10 @@ function _permuteSamples(samples) {
  */
 function confidenceInterval(array, level) {
   const sorted = array.slice().sort((a, b) => a - b);
-  const lower = sorted[Math.floor((1 - level) / 2 * array.length)];
-  const upper = sorted[Math.floor((1 + level) / 2 * array.length)];
+  const lowerI = Math.max(Math.floor((1 - level) / 2 * array.length), 0);
+  const lower = sorted[lowerI];
+  const upperI = Math.min(Math.floor((1 + level) / 2 * array.length), array.length - 1);
+  const upper = sorted[upperI];
   return {
     lower,
     upper,
@@ -764,7 +769,7 @@ function _nullDistributionProportion(sample, reps, opts) {
 /**
  * Creates a null hypothesis distribution for a multi-variable data sample,
  * akin to R's `(res_var ~ exp_var)` formula. 
- * AS OF RIGHT NOW it only supports "Independence" and the "diff in means" statistic.
+ * AS OF RIGHT NOW it only supports "Independence" and the "diff in means/ratios" statistic.
  * @param {*} samples An array of [res, exp] samples
  * @param {*} reps 
  * @param {*} opts Options objcet with the following properties:
@@ -962,7 +967,7 @@ function _pValueTwoSided(distribution, observedStat, options) {
   // https://github.com/tidymodels/infer/blob/1d069b3e16569cbb5f7dc9a5458e52379441259f/R/get_p_value.R#L249
   const leftTail = _pValueLess(distribution, observedStat);
   const rightTail = _pValueGreater(distribution, observedStat);
-  return Math.min(leftTail, rightTail) * 2;
+  return Math.min(Math.min(leftTail, rightTail) * 2, 1);
 }
 
 
