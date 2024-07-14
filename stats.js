@@ -43,12 +43,22 @@ function sum(x) {
 
 /**
  * Computes the average of a list of numbers, 
- * computed as x̄ = Σxi / n
+ * computed as x̄ = Σxi / n.
  * @param {*} x 
  * @returns 
  */
 function mean(x) {
   return sum(x) / x.length;
+}
+
+/**
+ * Computes the mean of a probability distribution, 
+ * i.e. the weighted mean of a list of numbers.
+ * @param {*} P A probability distribution as a list of [x, p] pairs.
+ * @returns 
+ */
+function meanDistribution(P) {
+  return P.reduce((acc, [x, p]) => acc + x * p, 0);
 }
 
 /**
@@ -137,6 +147,17 @@ function variance(x) {
 }
 
 /**
+ * Computes the variance of a probability distribution,
+ * i.e. the weighted variance of a list of numbers.
+ * @param {*} P A probability distribution as a list of [x, p] pairs.
+ * @returns 
+ */
+function varianceDistribution(P) {
+  const avg = meanDistribution(P);
+  return P.reduce((acc, [x, p]) => acc + p * Math.pow(x - avg, 2), 0);
+}
+
+/**
  * Returns the _sample standard deviation_ `s` or `σ` of a list of values,
  * computed as σ = √(Σ(x - x̄)² / (n - 1)).
  * @param {*} array 
@@ -144,6 +165,16 @@ function variance(x) {
  */
 function standardDeviation(array) {
   return Math.sqrt(variance(array));
+}
+
+/**
+ * Computes the standard deviation of a probability distribution,
+ * i.e. the weighted standard deviation of a list of numbers.
+ * @param {*} P A probability distribution as a list of [x, p] pairs.
+ * @returns 
+ */
+function standardDeviationDistribution(P) {
+  return Math.sqrt(varianceDistribution(P));
 }
 
 
@@ -1044,11 +1075,14 @@ module.exports = {
   extremes,
   sum,
   mean,
+  meanDistribution,
   median,
   mode,
   meanDeviation,
   variance,
+  varianceDistribution,
   standardDeviation,
+  standardDeviationDistribution,
   unique,
   ratio,
   quantile,
