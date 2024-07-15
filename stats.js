@@ -1,5 +1,6 @@
 const TAU = 2 * Math.PI;
 const SQRT_TAU = Math.sqrt(TAU);
+const SQRT_PI = Math.sqrt(Math.PI);
 
 
 //  █████╗ ██████╗ ██╗████████╗██╗  ██╗███╗   ███╗███████╗████████╗██╗ ██████╗
@@ -297,8 +298,15 @@ function histogram(array, options) {
 }
 
 
-
-
+/**
+ * Computes the factorial n! of a number n.
+ * @param {*} n 
+ * @returns 
+ */
+function factorial(n) { 
+  if (n === 0) return 1;
+  return n * factorial(n - 1);
+}
 
 
 
@@ -661,7 +669,7 @@ function randomSeed(seed) {
  */
 function randomStandardNormal() {
   let u1 = 0,
-    u2 = 0;
+      u2 = 0;
 
   // Avoid the zero endpoint
   while (u1 === 0) u1 = random();
@@ -1049,6 +1057,119 @@ function _powerTwoSided(distribution, criticalValues) {
 
 
 
+// ██████╗ ██████╗  ██████╗ ██████╗  █████╗ ██████╗ ██╗██╗     ██╗████████╗██╗   ██╗
+// ██╔══██╗██╔══██╗██╔═══██╗██╔══██╗██╔══██╗██╔══██╗██║██║     ██║╚══██╔══╝╚██╗ ██╔╝
+// ██████╔╝██████╔╝██║   ██║██████╔╝███████║██████╔╝██║██║     ██║   ██║    ╚████╔╝ 
+// ██╔═══╝ ██╔══██╗██║   ██║██╔══██╗██╔══██║██╔══██╗██║██║     ██║   ██║     ╚██╔╝  
+// ██║     ██║  ██║╚██████╔╝██████╔╝██║  ██║██████╔╝██║███████╗██║   ██║      ██║   
+// ╚═╝     ╚═╝  ╚═╝ ╚═════╝ ╚═════╝ ╚═╝  ╚═╝╚═════╝ ╚═╝╚══════╝╚═╝   ╚═╝      ╚═╝   
+//                                                                                  
+// ███████╗██╗   ██╗███╗   ██╗ ██████╗████████╗██╗ ██████╗ ███╗   ██╗███████╗
+// ██╔════╝██║   ██║████╗  ██║██╔════╝╚══██╔══╝██║██╔═══██╗████╗  ██║██╔════╝
+// █████╗  ██║   ██║██╔██╗ ██║██║        ██║   ██║██║   ██║██╔██╗ ██║███████╗
+// ██╔══╝  ██║   ██║██║╚██╗██║██║        ██║   ██║██║   ██║██║╚██╗██║╚════██║
+// ██║     ╚██████╔╝██║ ╚████║╚██████╗   ██║   ██║╚██████╔╝██║ ╚████║███████║
+// ╚═╝      ╚═════╝ ╚═╝  ╚═══╝ ╚═════╝   ╚═╝   ╚═╝ ╚═════╝ ╚═╝  ╚═══╝╚══════╝
+//                                                                           
+// Some functions to generate probability functions for common distributions.
+
+const ProbabilityFunctions = {};
+
+/**
+ * Returns the probability density function for a Bernoulli distribution 
+ * with the given probability p. Bernoulli distributions are used to model
+ * the outcomes of a single binary event, such as a coin flip, with a 
+ * particular probability of success. 
+ * Inputs to the function are 0 (fail) or 1 (success).
+ * @param {*} p 
+ * @returns 
+ */
+ProbabilityFunctions.Bernoulli = function(p = 0.5) {
+  // Compute the probability density function for a Bernoulli distribution
+  function pdf(x) {
+    return x === 1 ? p : 1 - p;
+  }
+  return pdf;
+}
+
+
+/**
+ * Returns a probability density function for a normal distribution with the given mean μ and standard deviation σ.
+ * @param {*} mean 
+ * @param {*} sd 
+ * @returns 
+ */
+ProbabilityFunctions.Normal = function(mean = 0, sd = 1) {
+  // Compute the probability density function for a normal distribution
+  const f1 = 1 / (sd * SQRT_TAU);
+  function pdf(x) {
+    return f1 * Math.exp(-0.5 * Math.pow((x - mean) / sd, 2));
+  }
+
+  return pdf;
+}
+
+
+/**
+ * Returns a probability density function for a standard normal distribution,
+ * i.e. a normal distribution with mean μ=0 and standard deviation σ=1.
+ * @returns 
+ */
+ProbabilityFunctions.StandardNormal = () => ProbabilityFunctions.Normal(0, 1);
+
+
+/**
+ * Computes the probability density function for a (Student's) t-distribution 
+ * with the given degrees of freedom v. This distribution is similar to the
+ * normal distribution, but the tails are heavier, especially for small v.
+ * @param {*} v Degrees of freedom of the t-distribution.
+ * @returns 
+ */
+ProbabilityFunctions.T = function(v) {
+  // Compute the probability density function for a t-distribution.
+  // See https://en.wikipedia.org/wiki/Student%27s_t-distribution
+  // See https://www.wolframalpha.com/input?i=pdf+student%27s+t+distribution
+  // Checks: https://www.danielsoper.com/statcalc/calculator.aspx?id=40
+  const f1 = 1 / (Math.sqrt(v) * _betaFunction(0.5 * v, 0.5));
+  const exp = -0.5 * (v + 1);
+  function pdf(x) {
+    return f1 * Math.pow(1 + x * x / v, exp);
+  }
+  return pdf;
+}
+
+function _betaFunction(a, b) { 
+  return _gammaFunction(a) * _gammaFunction(b) / _gammaFunction(a + b);
+}
+
+function _gammaFunction(x) {
+  if (x === 1) return 1;
+  if (x === 0.5) return SQRT_PI;  // https://www.wolframalpha.com/input?i=gamma+function+of+1%2F2
+  return (x - 1) * _gammaFunction(x - 1);
+}
+
+
+
+/**
+ * Generates a probability distribution for a given probability function.
+ * Will return an array of [x, p(x)] values for the given range.
+ * Useful to plot the distribution.
+ * @param {*} probFunc 
+ * @param {*} start 
+ * @param {*} end 
+ * @param {*} step 
+ * @returns 
+ */
+function computeProbabilityDistribution(probFunc, start = -1, end = 1, step = 0.1) {
+  const distribution = [];
+  for (let x = start; x <= end; x += step) {
+    distribution.push([x, probFunc(x)]);
+  }
+  return distribution;
+}
+
+
+
 
 
 
@@ -1087,6 +1208,7 @@ module.exports = {
   ratio,
   quantile,
   histogram,
+  factorial,
 
   covariance,
   correlation,
@@ -1106,5 +1228,8 @@ module.exports = {
   nullDistribution,
   nullDistributionMulti,
   pValue,
-  power
+  power,
+
+  ProbabilityFunctions,
+  computeProbabilityDistribution,
 };
