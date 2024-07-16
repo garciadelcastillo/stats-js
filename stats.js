@@ -1469,7 +1469,8 @@ Inference.Proportion = function (sample, options) {
 
 
 /**
- * 
+ * Estimate the sample size needed to achieve a given confidence level 
+ * within a margin of error.
  * @param {*} confidence Desired level of confidence [0.0-1.0]
  * @param {*} me Desired margin of error on our interval. 
  * @param {*} p Estimated proportion of successes in the population. 
@@ -1478,18 +1479,12 @@ Inference.Proportion = function (sample, options) {
  * is available. 
  */
 SampleSize.Proportion = function(confidence, me, p = 0.5) {
-
-  // Compute the confidence interval for the population proportion
-  // (unrelated to the null hypothesis, but based on the sample proportion)
   const icdf = ProbabilityFunctions.NormalInvCDF(0, 1);
   const ci = icdf(confidence + 0.5 * (1 - confidence));
 
   const n = Math.ceil( ( p * (1 - p) * ci * ci) / (me * me) );
-
   return n;
 }
-
-
 
 
 
@@ -1544,9 +1539,96 @@ Inference.Mean = function (sample, options) {
 }
 
 
+/**
+ * Estimate the sample size needed to achieve a given confidence level 
+ * within a margin of error.
+ * @param {*} confidence Desired level of confidence [0.0-1.0]
+ * @param {*} me Desired margin of error on our interval. 
+ * @param {*} s Estimated standard deviation of the population.
+ * How do we estimate this value? 
+ * @returns 
+ */
+SampleSize.Mean = function(confidence, me, s) {
+  // const icdf = ProbabilityFunctions.TInvCDF();  // How to estimate df here?
+  const icdf = ProbabilityFunctions.NormalInvCDF(0, 1);  // use Normal distribution as approximation
+  const c = confidence + 0.5 * (1 - confidence);
+  const ci = icdf(c);
+  const n = Math.ceil( (s * s * ci * ci) / (me * me) );
+  return n;
+}
 
 
+/**
+ * Computes theory-based inference for Difference in Proportions. 
+ * @param {*} sample A data frame with the two variables of interest.
+ * @param {*} options An object with the following properties:
+ * - variables: An array with the two variables of interest, e.g. ["USCitizen", "Married"]
+ * - success: An array with the success values for each variable, e.g. [true, true]
+ * - confidence: The confidence level for the confidence interval, e.g. 0.95
+ * - null: The null hypothesis value the proportions, e.g. 0.5 for equal proportions.
+ * @returns 
+ */
+Inference.DifferenceInProportions = function (sample, options) {
+  // Extract the two samples
+  const x0 = sample.filter(x => x[options.variables[0]] != options.success[0]);
+  const x1 = sample.filter(x => x[options.variables[0]] == options.success[0]);
 
+  const x00 = x0.filter(x => x[options.variables[1]] != options.success[1]);
+  const x01 = x0.filter(x => x[options.variables[1]] == options.success[1]);
+  const x10 = x1.filter(x => x[options.variables[1]] != options.success[1]);
+  const x11 = x1.filter(x => x[options.variables[1]] == options.success[1]);
+
+  // // Log
+  // console.log(`${options.variables[0]} (not) ${options.success[0]} & ${options.variables[1]} (not) ${options.success[1]}: ${x00.length}`);
+  // console.log(`${options.variables[0]} (not) ${options.success[0]} & ${options.variables[1]} ${options.success[1]}: ${x01.length}`);
+  // console.log(`${options.variables[0]} ${options.success[0]} & ${options.variables[1]} (not) ${options.success[1]}: ${x10.length}`);
+  // console.log(`${options.variables[0]} ${options.success[0]} & ${options.variables[1]} ${options.success[1]}: ${x11.length}`);
+
+  // Checks
+  if (x00.length < 10 || x01.length < 10 || x10.length < 10 || x11.length < 10)
+    console.log('Warning: at least 10 samples are recommended for a good approximation.');
+
+  // Compute the sample proportions
+  const p1 = x01.length / x0.length;  // success response over failed explanatory
+  const p2 = x11.length / x1.length;  // success response over success explanatory
+
+  // Compute values related to the null hypothesis
+  const se1sq = options.null * (1 - options.null) / x0.length;
+  const se2sq = options.null * (1 - options.null) / x1.length;
+  const se = Math.sqrt(se1sq + se2sq);
+  const z = zScore(p2 - p1, 0, se);
+  const cdf = ProbabilityFunctions.NormalCDF(0, 1);
+  const p_value = 2 * cdf(-Math.abs(z));  // two-tailed
+  const direction = "two-tailed";
+
+  // Compute the confidence interval for the difference in proportions
+  // (unrelated to the null hypothesis, but based on the sample proportions)
+  const icdf = ProbabilityFunctions.NormalInvCDF(0, 1);
+  const ci = icdf(options.confidence + 0.5 * (1 - options.confidence));
+  const ci_lower_bound = (p2 - p1) - ci * se;
+  const ci_upper_bound = (p2 - p1) + ci * se;
+
+  return {
+    ...options,
+    p1,
+    p2,
+    se,
+    z,
+    p_value,
+    direction,
+    ci_lower_bound,
+    ci_upper_bound,
+    descriptions: {
+      p1: `The computed proportion of successes in the RESPONSE variable '${options.variables[0]}' is: ` + p1.toFixed(3),
+      p2: `The computed proportion of successes in the EXPLANATORY/CONTROL variable '${options.variables[1]}' is: ` + p2.toFixed(3),
+      se: 'Assuming the null hypothesis is true, the estimated standard error in this sample is: ' + se.toFixed(3),
+      z: 'Assuming the null hypothesis is true, the z-score for the difference in proportions is: ' + z.toFixed(3) + ', which means the difference in proportions is ' + z.toFixed(3) + ' Standard Errors away from the null, which is considered ' + (Math.abs(z) < 2 ? 'non-significant' : Math.abs(z) < 3 ? 'UNUSUAL' : 'VERY UNUSUAL'),
+      p_value: 'Assuming the null hypothesis is true, the p-value of the difference in proportions is: ' + p_value.toFixed(3) + ', which is considered ' + (p_value > 0.05 ? 'non-significant' : p_value > 0.01 ? 'UNUSUAL' : 'VERY UNUSUAL'),
+      ci: 'The ' + options.confidence * 100 + '% confidence interval for the difference in proportions is: [' + ci_lower_bound.toFixed(3) + ', ' + ci_upper_bound.toFixed(3) + ']. This means that, given this sample, we are ' + options.confidence * 100 + '% confident that the true difference in proportions is within this interval.',
+    }
+  } 
+
+}
 
 
 

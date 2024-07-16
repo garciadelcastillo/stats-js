@@ -621,7 +621,6 @@ print();
 print(`Using these methods, we can estimate sample sizes for a study before we start, in order to achieve a desired margin of error and confidence level.`);
 print(`The process is basically using the formula for the standard error of the desired proportion, and solving for n.`);
 print(`In the case of a proportion, the formula is:`);
-print();
 print(`  ${"z* sqrt(p(1-p)/n) <= ME ".bold.red}`);
 print();
 print(`Solving for n:`)
@@ -630,6 +629,61 @@ print();
 
 ci = 0.95
 me = 0.02
-p = 0.5;
+p = 0.25;
 n =  stats.SampleSize.Proportion(ci, me, p);
 print(`For example, for a ${ci * 100}% confidence level and a margin of error of ${me}, the sample size required is`, n);
+print();
+
+print(`In the case of a mean, the formula is:`);
+print(`  ${"t* s/sqrt(n) <= ME ".bold.red}`);
+print();
+print(`Solving for n:`)
+print(`  ${"n >= (s*t*/ME)^2".bold.red}`);
+print();
+
+
+
+ci = 0.95
+me = 0.02
+s = 0.25;
+n = stats.SampleSize.Mean(ci, me, s);
+print(`For example, for a ${ci * 100}% confidence level and a margin of error of ${me}, the sample size required is`, n);
+print(`THE ABOVE IS UNTESTED, STILL NEED TO VERIFY estimation of sd`);
+print();
+print();
+print();
+print();
+
+
+
+
+
+print(`More class examples: THE ACS SURVEY`);
+
+let acs = csv.parse(fs.readFileSync('sample_data/ACS.csv', 'utf8'), {
+    columns: true,
+    skip_empty_lines: true,
+    delimiter: ','
+});
+
+print(`Difference in Proportions:
+Let’s try to determine if there’s a relationship between US citizenship and marriage status.`);
+
+acs_adults = acs.filter(d => parseInt(d['Age']) >= 18);
+// print(`Imported this many adults: `, acs_adults.length);
+data = [
+    acs_adults.filter(d => d['USCitizen'] == '0'),
+    acs_adults.filter(d => d['USCitizen'] == '1'),
+];
+
+inf = stats.Inference.DifferenceInProportions(acs_adults, {
+    variables: ["USCitizen", "Married"],
+    success: ["1", "1"],
+    null: 0.5,  // assume the proportion is 50%
+    confidence: 0.95,
+});
+// print(inf);
+print("RESULTS:")
+for (let key in inf.descriptions) {
+    print("  " + inf.descriptions[key].green);
+}
