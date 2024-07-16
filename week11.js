@@ -399,6 +399,7 @@ plotHistogram(sample_proportions, {
 });
 
 
+
 let sample_proportions_distribution = stats.ProbabilityFunctions.Normal(mean, std_dev);
 data2 = stats.computeProbabilityDistribution(sample_proportions_distribution, mean - 4 * std_dev, mean + 4 * std_dev, std_dev / 100); 
 plotGraph([data1,data2], {
@@ -418,6 +419,7 @@ print();
 print();
 print();
 
+print(`THEORY-BASED INFERENCE FOR SINGLE PROPORTIONS`);
 print(`
 Example: Bern and Honorton’s (1994) extrasensory perception (ESP) studies
 (the one with people guessing the value of cards with a 25% chance of success)
@@ -509,10 +511,53 @@ print(inf.descriptions.se);
 print(inf.descriptions.z);
 print(inf.descriptions.p_value);
 print(inf.descriptions.ci);
+print();
+print();
+print();
+print();
+print();
+print();
+print();
 
 
 
 
+
+
+
+print(`THEORY-BASED INFERENCE FOR SINGLE MEAN`);
+print(`https://mcconvil.github.io/stat100s24/inference_summary.html`);
+print(`
+Approximating the Sampling Distribution of a SAMPLE MEAN
+
+For large n > 30 sample, let’s consider conducting a hypothesis test for a single mean:
+Ho : μ = μo where μo = null value
+Ha : μ > μo or Ha : μ < μo or Ha : μ ≠ μo
+By the CLT, under Ho:
+
+    ${"x̄~ N(μ_o, σ/sqrt(n))".bold.red}
+
+Note that in the above, 'x̄' is the statistic mean, 'σ' is the population 
+standard deviation 'n' is the sample size. This requires actually knowing'σ', 
+which is not always possible. So we will use the sample standard deviation 's':
+
+    ${"x̄~ N(μ_o, s/sqrt(n))".bold.red}
+
+For this distribution, we will use the t-distribution instead of the normal distribution:
+
+    ${"t(df = n - 1)".bold.red}
+
+Similarly, for the analysis of the confidence interval, we can use the t-distribution: 
+
+    ${"statistic ± t∗SE".bold.red}
+
+So we will need the CDF and ICDF of the t-distribution.
+`);
+
+
+cdf = stats.ProbabilityFunctions.TCDF(15);
+t = cdf(1.25);
+print(`The CDF of the t-distribution at df 15 is`, t);
 
 
 

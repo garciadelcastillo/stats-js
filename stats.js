@@ -1,7 +1,9 @@
+const stdlib_tcdf = require('@stdlib/stats/base/dists/t/cdf');
+
 const TAU = 2 * Math.PI;
 const SQRT_TAU = Math.sqrt(TAU);
 const SQRT_PI = Math.sqrt(Math.PI);
-const SQRT_2 = Math.sqrt(2); 
+const SQRT_2 = Math.sqrt(2);
 
 
 //  █████╗ ██████╗ ██╗████████╗██╗  ██╗███╗   ███╗███████╗████████╗██╗ ██████╗
@@ -110,7 +112,10 @@ function mode(array) {
       max = counter[el];
     }
   }
-  return { mode, max };
+  return {
+    mode,
+    max
+  };
 }
 
 
@@ -257,7 +262,7 @@ function histogram(array, options) {
   const min = options.binStart === undefined ? ends[0] : options.binStart;
   const max = options.binEnd === undefined ? ends[1] : options.binEnd;
   const width = options.binWidth || (max - min) / 10;
-  
+
   // Init all bins to 0
   let bins = [];
   let binCount = Math.ceil((max - min) / width);
@@ -273,7 +278,7 @@ function histogram(array, options) {
     else outOfBounds.push(array[i]);
   }
   if (outOfBounds.length > 0 && options.logErrors) console.log("WARNING: " + outOfBounds.length + " values were outside of set histogram bounds: ", outOfBounds);
-  
+
   // Structure the data as { label: "x", value: y }
   let factor = options.decimals !== undefined ? Math.pow(10, options.decimals) : 1;
   let valArray = bins.map((value, index) => {
@@ -304,7 +309,7 @@ function histogram(array, options) {
  * @param {*} n 
  * @returns 
  */
-function factorial(n) { 
+function factorial(n) {
   if (n === 0) return 1;
   return n * factorial(n - 1);
 }
@@ -670,7 +675,7 @@ function randomSeed(seed) {
  */
 function randomStandardNormal() {
   let u1 = 0,
-      u2 = 0;
+    u2 = 0;
 
   // Avoid the zero endpoint
   while (u1 === 0) u1 = random();
@@ -758,7 +763,7 @@ function nullDistribution(sample, reps, opts) {
         return _nullDistributionMean(sample, reps, opts);
       case "ratio":
       case "prop":
-        return _nullDistributionProportion(sample, reps, opts);  
+        return _nullDistributionProportion(sample, reps, opts);
     }
   }
 
@@ -827,10 +832,10 @@ function _nullDistributionProportion(sample, reps, opts) {
  */
 function nullDistributionMulti(samples, reps, opts) {
   if (opts.null === "independence") {
-    switch(opts.statistic) {
+    switch (opts.statistic) {
       case "diff in means":
         return _nullDistributionPermutationDiffMeans(samples, reps, opts);
-        
+
       case "diff in proportions":
       case "diff in ratios":
         return _nullDistributionPermutationDiffProportions(samples, reps, opts);
@@ -867,7 +872,7 @@ function _nullDistributionPermutationDiffMeans(samples, reps, opts) {
     // Group the numerical values based on the categorical ones
     const values0 = permuted[numId].filter((_, i) => permuted[catId][i] === opts.order[0]);
     const values1 = permuted[numId].filter((_, i) => permuted[catId][i] === opts.order[1]);
-    
+
     // Compute the difference in means in the stated order
     return mean(values0) - mean(values1);
   });
@@ -1078,7 +1083,7 @@ function zScore(x, mu, sigma) {
  * @param {*} sigma 
  */
 function zScorer(mu, sigma) {
-  return function(x) {
+  return function (x) {
     return (x - mu) / sigma;
   }
 }
@@ -1115,7 +1120,7 @@ const ProbabilityFunctions = {};
  * @param {*} p 
  * @returns 
  */
-ProbabilityFunctions.Bernoulli = function(p = 0.5) {
+ProbabilityFunctions.Bernoulli = function (p = 0.5) {
   // Compute the probability density function for a Bernoulli distribution
   function pdf(x) {
     return x === 1 ? p : 1 - p;
@@ -1130,9 +1135,10 @@ ProbabilityFunctions.Bernoulli = function(p = 0.5) {
  * @param {*} sd 
  * @returns 
  */
-ProbabilityFunctions.Normal = function(mean = 0, sd = 1) {
+ProbabilityFunctions.Normal = function (mean = 0, sd = 1) {
   // Compute the probability density function for a normal distribution
   const f1 = 1 / (sd * SQRT_TAU);
+
   function pdf(x) {
     return f1 * Math.exp(-0.5 * Math.pow((x - mean) / sd, 2));
   }
@@ -1148,7 +1154,7 @@ ProbabilityFunctions.Normal = function(mean = 0, sd = 1) {
  * @param {*} sd 
  * @returns 
  */
-ProbabilityFunctions.NormalCDF = function(mean = 0, sd = 1) { 
+ProbabilityFunctions.NormalCDF = function (mean = 0, sd = 1) {
   // ChatGPT-generated code!
   // Compute the cumulative distribution function for a normal distribution
   function cdf(x) {
@@ -1162,12 +1168,12 @@ function _erf(x) {
   //  This function approximates the error function using a polynomial approximation, which is a common technique due to its complexity. The constants used are specific coefficients that provide a good approximation.
 
   // Constants
-  const a1 =  0.254829592;
+  const a1 = 0.254829592;
   const a2 = -0.284496736;
-  const a3 =  1.421413741;
+  const a3 = 1.421413741;
   const a4 = -1.453152027;
-  const a5 =  1.061405429;
-  const p  =  0.3275911;
+  const a5 = 1.061405429;
+  const p = 0.3275911;
 
   // Save the sign of x
   const sign = x < 0 ? -1 : 1;
@@ -1191,44 +1197,44 @@ function _erf(x) {
  * @param {*} sd 
  * @returns 
  */
-ProbabilityFunctions.NormalInvCDF = function(mean = 0, sd = 1) {
+ProbabilityFunctions.NormalInvCDF = function (mean = 0, sd = 1) {
   // ChatGPT-generated code!
 
   // Compute the inverse cumulative distribution function for a normal distribution
   function invcdf(p) {
     if (p < 0 || p > 1) {
-        throw new Error("The probability p must be between 0 and 1.");
+      throw new Error("The probability p must be between 0 and 1.");
     }
 
     // Coefficients in rational approximations for the standard normal distribution
     const a = [
-        -3.969683028665376e+01,
-        2.209460984245205e+02,
-        -2.759285104469687e+02,
-        1.383577518672690e+02,
-        -3.066479806614716e+01,
-        2.506628277459239e+00
+      -3.969683028665376e+01,
+      2.209460984245205e+02,
+      -2.759285104469687e+02,
+      1.383577518672690e+02,
+      -3.066479806614716e+01,
+      2.506628277459239e+00
     ];
     const b = [
-        -5.447609879822406e+01,
-        1.615858368580409e+02,
-        -1.556989798598866e+02,
-        6.680131188771972e+01,
-        -1.328068155288572e+01
+      -5.447609879822406e+01,
+      1.615858368580409e+02,
+      -1.556989798598866e+02,
+      6.680131188771972e+01,
+      -1.328068155288572e+01
     ];
     const c = [
-        -7.784894002430293e-03,
-        -3.223964580411365e-01,
-        -2.400758277161838e+00,
-        -2.549732539343734e+00,
-        4.374664141464968e+00,
-        2.938163982698783e+00
+      -7.784894002430293e-03,
+      -3.223964580411365e-01,
+      -2.400758277161838e+00,
+      -2.549732539343734e+00,
+      4.374664141464968e+00,
+      2.938163982698783e+00
     ];
     const d = [
-        7.784695709041462e-03,
-        3.224671290700398e-01,
-        2.445134137142996e+00,
-        3.754408661907416e+00
+      7.784695709041462e-03,
+      3.224671290700398e-01,
+      2.445134137142996e+00,
+      3.754408661907416e+00
     ];
 
     // Define break-points
@@ -1238,22 +1244,22 @@ ProbabilityFunctions.NormalInvCDF = function(mean = 0, sd = 1) {
     let q, x;
     // Rational approximation for lower region
     if (p < plow) {
-        q = Math.sqrt(-2 * Math.log(p));
-        x = (((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) /
-             ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1);
+      q = Math.sqrt(-2 * Math.log(p));
+      x = (((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) /
+        ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1);
     }
     // Rational approximation for upper region
     else if (p > phigh) {
-        q = Math.sqrt(-2 * Math.log(1 - p));
-        x = -(((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) /
-              ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1);
+      q = Math.sqrt(-2 * Math.log(1 - p));
+      x = -(((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) /
+        ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1);
     }
     // Rational approximation for central region
     else {
-        q = p - 0.5;
-        const r = q * q;
-        x = (((((a[0] * r + a[1]) * r + a[2]) * r + a[3]) * r + a[4]) * r + a[5]) * q /
-             (((((b[0] * r + b[1]) * r + b[2]) * r + b[3]) * r + b[4]) * r + 1);
+      q = p - 0.5;
+      const r = q * q;
+      x = (((((a[0] * r + a[1]) * r + a[2]) * r + a[3]) * r + a[4]) * r + a[5]) * q /
+        (((((b[0] * r + b[1]) * r + b[2]) * r + b[3]) * r + b[4]) * r + 1);
     }
 
     // Adjust for mean and standard deviation
@@ -1262,12 +1268,6 @@ ProbabilityFunctions.NormalInvCDF = function(mean = 0, sd = 1) {
 
   return invcdf;
 }
-
-
-
-
-
-
 
 
 /**
@@ -1293,28 +1293,41 @@ ProbabilityFunctions.StandardNormalCDF = () => ProbabilityFunctions.NormalCDF(0,
  * @param {*} v Degrees of freedom of the t-distribution.
  * @returns 
  */
-ProbabilityFunctions.T = function(v) {
+ProbabilityFunctions.T = function (v) {
   // Compute the probability density function for a t-distribution.
   // See https://en.wikipedia.org/wiki/Student%27s_t-distribution
   // See https://www.wolframalpha.com/input?i=pdf+student%27s+t+distribution
   // Checks: https://www.danielsoper.com/statcalc/calculator.aspx?id=40
   const f1 = 1 / (Math.sqrt(v) * _betaFunction(0.5 * v, 0.5));
   const exp = -0.5 * (v + 1);
+
   function pdf(x) {
     return f1 * Math.pow(1 + x * x / v, exp);
   }
   return pdf;
 }
 
-function _betaFunction(a, b) { 
+function _betaFunction(a, b) {
   return _gammaFunction(a) * _gammaFunction(b) / _gammaFunction(a + b);
 }
 
 function _gammaFunction(x) {
   if (x === 1) return 1;
-  if (x === 0.5) return SQRT_PI;  // https://www.wolframalpha.com/input?i=gamma+function+of+1%2F2
+  if (x === 0.5) return SQRT_PI; // https://www.wolframalpha.com/input?i=gamma+function+of+1%2F2
   return (x - 1) * _gammaFunction(x - 1);
 }
+
+
+
+ProbabilityFunctions.TCDF = function(df) {
+  // ChatGPT couldn't take this one... so I'm using a library!
+  function cdf(x) {
+    return stdlib_tcdf(x, df);
+  }
+
+  return cdf;
+}
+
 
 
 
@@ -1366,11 +1379,11 @@ options = {
  * - confidence: The confidence level for the confidence interval.
  * @returns 
  */
-Inference.Proportion = function(sample, options) {
+Inference.Proportion = function (sample, options) {
   const successes = sample.filter(x => x === options.success);
-  
+
   // Checks
-  if (successes.length < 10 || sample.length - options.success.length < 10) 
+  if (successes.length < 10 || sample.length - options.success.length < 10)
     console.log('Warning: at least 10 successes and 10 failures are recommended for a good approximation.');
 
   // Compute the sample proportion
