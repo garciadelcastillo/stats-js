@@ -679,7 +679,7 @@ data = [
 inf = stats.Inference.DifferenceInProportions(acs_adults, {
     variables: ["USCitizen", "Married"],
     success: ["1", "1"],
-    null: 0.5,  // assume the proportion is 50%
+    // null: 0.5,  // assume the proportion is 50%  (I don't think this is correct, the null is the difference in proportions, which should be 0)
     confidence: 0.95,
 });
 // print(inf);

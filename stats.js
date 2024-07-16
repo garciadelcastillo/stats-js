@@ -1565,7 +1565,7 @@ SampleSize.Mean = function(confidence, me, s) {
  * - variables: An array with the two variables of interest, e.g. ["USCitizen", "Married"]
  * - success: An array with the success values for each variable, e.g. [true, true]
  * - confidence: The confidence level for the confidence interval, e.g. 0.95
- * - null: The null hypothesis value the proportions, e.g. 0.5 for equal proportions.
+ * // - null: The null hypothesis value the proportions, e.g. 0.5 for equal proportions.
  * @returns 
  */
 Inference.DifferenceInProportions = function (sample, options) {
@@ -1593,8 +1593,16 @@ Inference.DifferenceInProportions = function (sample, options) {
   const p2 = x11.length / x1.length;  // success response over success explanatory
 
   // Compute values related to the null hypothesis
-  const se1sq = options.null * (1 - options.null) / x0.length;
-  const se2sq = options.null * (1 - options.null) / x1.length;
+  // const se1sq = options.null * (1 - options.null) / x0.length;
+  // const se2sq = options.null * (1 - options.null) / x1.length;
+
+  // Compute values related to the null hypothesis
+  // The null hypothesis is that the two proportions are equal, i.e. a value of 0. 
+  // But this throws off the calculation of the standard error? 
+  // If set to 0.5, it matches the results in class.
+  // So maybe p_hat is an estimated value of the true proportion, being 50%?   
+  const se1sq = 0.5 * (1 - 0.5) / x0.length;
+  const se2sq = 0.5 * (1 - 0.5) / x1.length;
   const se = Math.sqrt(se1sq + se2sq);
   const z = zScore(p2 - p1, 0, se);
   const cdf = ProbabilityFunctions.NormalCDF(0, 1);
@@ -1621,9 +1629,9 @@ Inference.DifferenceInProportions = function (sample, options) {
     descriptions: {
       p1: `The computed proportion of successes in the RESPONSE variable '${options.variables[0]}' is: ` + p1.toFixed(3),
       p2: `The computed proportion of successes in the EXPLANATORY/CONTROL variable '${options.variables[1]}' is: ` + p2.toFixed(3),
-      se: 'Assuming the null hypothesis is true, the estimated standard error in this sample is: ' + se.toFixed(3),
-      z: 'Assuming the null hypothesis is true, the z-score for the difference in proportions is: ' + z.toFixed(3) + ', which means the difference in proportions is ' + z.toFixed(3) + ' Standard Errors away from the null, which is considered ' + (Math.abs(z) < 2 ? 'non-significant' : Math.abs(z) < 3 ? 'UNUSUAL' : 'VERY UNUSUAL'),
-      p_value: 'Assuming the null hypothesis is true, the p-value of the difference in proportions is: ' + p_value.toFixed(3) + ', which is considered ' + (p_value > 0.05 ? 'non-significant' : p_value > 0.01 ? 'UNUSUAL' : 'VERY UNUSUAL'),
+      se: 'Assuming null to be no difference in proportions, the estimated standard error in this sample is: ' + se.toFixed(3),
+      z: 'Assuming null to be no difference in proportions, the z-score for the difference in proportions is: ' + z.toFixed(3) + ', which means the difference in proportions is ' + z.toFixed(3) + ' Standard Errors away from the null, which is considered ' + (Math.abs(z) < 2 ? 'non-significant' : Math.abs(z) < 3 ? 'UNUSUAL' : 'VERY UNUSUAL'),
+      p_value: 'Assuming null to be no difference in proportions, the p-value of the difference in proportions is: ' + p_value.toFixed(3) + ', which is considered ' + (p_value > 0.05 ? 'non-significant' : p_value > 0.01 ? 'UNUSUAL' : 'VERY UNUSUAL'),
       ci: 'The ' + options.confidence * 100 + '% confidence interval for the difference in proportions is: [' + ci_lower_bound.toFixed(3) + ', ' + ci_upper_bound.toFixed(3) + ']. This means that, given this sample, we are ' + options.confidence * 100 + '% confident that the true difference in proportions is within this interval.',
     }
   } 
