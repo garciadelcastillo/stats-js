@@ -1470,6 +1470,49 @@ Inference.Proportion = function (sample, options) {
   };
 }
 
+/**
+ * Compute the theory-based Confidence Interval for a Single Proportion.
+ * @param {*} successSize Number of successes in the sample.
+ * @param {*} sampleSize Total sample size.
+ * @param {*} confidence Target confidence level.
+ * @param {*} direction ["two-tailed", "less", "greater"]
+ * @returns 
+ */
+Inference.Proportion.ConfidenceInterval = function(successSize, sampleSize, confidence, direction = "two-tailed") {
+  const proportion = successSize / sampleSize;
+  const se = Math.sqrt(proportion * (1 - proportion) / sampleSize);
+  const icdf = ProbabilityFunctions.NormalInvCDF(0, 1);
+  let zstar, ci_lower_bound, ci_upper_bound;
+  if (direction === "two-tailed") {
+    zstar = icdf(confidence + 0.5 * (1 - confidence));
+    ci_lower_bound = proportion - zstar * se;
+    ci_upper_bound = proportion + zstar * se;
+  } else if (direction === "less") {
+    zstar = icdf(confidence);
+    ci_lower_bound = -Infinity;
+    ci_upper_bound = proportion + zstar * se;
+  } else if (direction === "greater") {
+    zstar = icdf(confidence);
+    ci_lower_bound = proportion - zstar * se;
+    ci_upper_bound = Infinity;
+  }
+
+  return {
+    successSize,
+    sampleSize,
+    proportion,
+    se,
+    zstar,
+    ci_lower_bound,
+    ci_upper_bound,
+    descriptions: {
+      proportion: `The computed proportion of successes in this sample is p̂ = ${successSize} / ${sampleSize} = ${proportion.toFixed(3)}`,
+      se: `The estimated standard error in this sample is: ${se.toFixed(3)}`,
+      ci: `The ${confidence * 100}% confidence interval for the true proportion of successes in the population is: [${ci_lower_bound.toFixed(3)}, ${ci_upper_bound.toFixed(3)}]. This means that, given this sample, we are ${confidence * 100}% confident that the true proportion of successes in the population is within this interval.`
+    }
+  };
+}
+
 
 /**
  * Estimate the sample size needed to achieve a given confidence level 
@@ -1550,7 +1593,7 @@ Inference.Mean = function(sample, options) {
  * @param {*} direction ["two-tailed", "less", "greater"]
  * @returns 
  */
-Inference.Mean.CI = function(mean, sd, n, confidence, direction = "two-tailed") {
+Inference.Mean.ConfidenceInterval = function(mean, sd, n, confidence, direction = "two-tailed") {
   // Confidence Interval only
   const se = sd / Math.sqrt(n);
   const icdf = ProbabilityFunctions.TInvCDF(n - 1);
@@ -1633,14 +1676,18 @@ Inference.Mean.TestHypothesis = function(nullMean, altMean, altSd, n, direction 
 /**
  * Estimate the sample size needed to achieve a given confidence level 
  * within a margin of error.
+ * NOTE: With the Mean we typically use the Student t-distribution. However, we would need to know sample size to determine degrees of freedom. So instead, we approximate the t-distribution with the Normal distribution, but will keep in mind that this will give us more conservative estimates of the population size. 
  * @param {*} confidence Desired level of confidence [0.0-1.0]
  * @param {*} me Desired margin of error on our interval. 
  * @param {*} s Estimated standard deviation of the population.
- * How do we estimate this value? 
  * @returns 
  */
 SampleSize.Mean = function(confidence, me, s) {
-  // const icdf = ProbabilityFunctions.TInvCDF();  // How to estimate df here?
+  // With the Mean we typically use the Student t-distribution.
+  // However, we would need to know sample size to determine degrees of freedom. 
+  // So instead, we approximate the t-distribution with the Normal distribution,
+  // but will keep in mind that this will give us more conservative estimates
+  // of the population size. 
   const icdf = ProbabilityFunctions.NormalInvCDF(0, 1);  // use Normal distribution as approximation
   const c = confidence + 0.5 * (1 - confidence);
   const ci = icdf(c);
@@ -1763,10 +1810,10 @@ Inference.DifferenceInMeans = function(sample, options) {
   const s0 = standardDeviation(x0response);
   const s1 = standardDeviation(x1response);
   const se = Math.sqrt(s0 * s0 / x0.length + s1 * s1 / x1.length);
-  const z = zScore(estimate, 0, se); 
+  const t = zScore(estimate, 0, se); 
   const df = Math.min(x0.length, x1.length) - 1;
   const cdf = ProbabilityFunctions.TCDF(df);
-  const p_value = 2 * cdf(-Math.abs(z));  // two-tailed
+  const p_value = 2 * cdf(-Math.abs(t));  // two-tailed
   const direction = "two-tailed";
 
   // Compute the confidence interval for the difference in means
@@ -1781,7 +1828,8 @@ Inference.DifferenceInMeans = function(sample, options) {
     x1mean,
     estimate,
     se,
-    z,
+    t,
+    df,
     p_value,
     direction,
     ci_lower_bound,
@@ -1791,7 +1839,7 @@ Inference.DifferenceInMeans = function(sample, options) {
       x1mean: `The computed mean of the RESPONSE variable '${options.variables[1]}' for the EXPLANATORY variable '${options.variables[0]}' = '${options.success[0]}' is: ` + x1mean.toFixed(3),
       estimate: 'The estimated difference in means is: ' + estimate.toFixed(3),
       se: 'The estimated standard error in this sample is: ' + se.toFixed(3),
-      z: 'The z-score for the difference in means is: ' + z.toFixed(3) + ', which means the difference in means is ' + z.toFixed(3) + ' Standard Errors away from the null, which is considered ' + (Math.abs(z) < 2 ? 'non-significant' : Math.abs(z) < 3 ? 'UNUSUAL' : 'VERY UNUSUAL'),
+      t: 'The standardized test statistic `t` for the difference in means is: ' + t.toFixed(3) + ', which means the difference in means is ' + t.toFixed(3) + ' Standard Errors away from the null, which is considered ' + (Math.abs(t) < 2 ? 'non-significant' : Math.abs(t) < 3 ? 'UNUSUAL' : 'VERY UNUSUAL'),
       p_value: 'The p-value of the difference in means is: ' + p_value.toFixed(3) + ', which is considered ' + (p_value > 0.05 ? 'non-significant' : p_value > 0.01 ? 'UNUSUAL' : 'VERY UNUSUAL'),
       ci: 'The ' + options.confidence * 100 + '% confidence interval for the difference in means is: [' + ci_lower_bound.toFixed(3) + ', ' + ci_upper_bound.toFixed(3) + ']. This means that, given this sample, we are ' + options.confidence * 100 + '% confident that the true difference in means is within this interval.',
     }
