@@ -500,7 +500,7 @@ print();
 
 print(`Putting all the calculation together in the Inference.Proportion function, we get:`);
 
-const inf = stats.Inference.Proportion(data, {
+inf = stats.Inference.Proportion(data, {
     success: 1, 
     null: 0.25,
     confidence: 0.95,
@@ -555,10 +555,65 @@ So we will need the CDF and ICDF of the t-distribution.
 `);
 
 
-cdf = stats.ProbabilityFunctions.TCDF(15);
-t = cdf(1.25);
-print(`The CDF of the t-distribution at df 15 is`, t);
+
+florida_lakes = csv.parse(fs.readFileSync('sample_data/FloridaLakes.csv', 'utf8'), {
+    columns: true,
+    skip_empty_lines: true,
+    delimiter: ','
+});
+
+data = florida_lakes.map(d => parseFloat(d['pH']));
+test_stat = stats.mean(data);
+print(`For example, suppose we have a sample of pH values of lakes in Florida:`);
+print(data);
+print(`The sample mean is ${test_stat}.`);
+print();
+print(`Assuming a null hypothesis of μ = 7, we can calculate the t-score of the test statistic:`);
+print(`  ${"x̄ ~ N(μ_o, s/sqrt(n))".bold.red}`);
+print();
+
+mu_o = 7;
+s = stats.standardDeviation(data);
+se = s / Math.sqrt(data.length);
+t_score = (test_stat - mu_o) / se;
+print(`  Sample standard deviation: ${s}`);
+print(`  Standard error: ${se}`);
+print(`  T-score: ${t_score}`);
+print();
+
+print(`The p-value of the t-score is calculated using the CDF of the t-distribution, which tells us the are of the curve to the left of the t-score:`);
+cdf = stats.ProbabilityFunctions.TCDF(data.length - 1);  // note the degrees of freedom is n - 1 (https://mcconvil.github.io/stat100s24/inference_summary.html)
+p_value = 2 * cdf(t_score);
+print(`  The p-value is `, p_value);
+print(`  Note how we multiply the p-value by 2 because we are interested 
+    in the area of the curve to the left and right of the t-score.`);
+print();
 
 
+icdf = stats.ProbabilityFunctions.TInvCDF(data.length - 1);
 
+ci = icdf(0.975);  // 95% CI
+print(`  For a 95% CI, the t-score is`, ci)
+print(` Lower bound: ${test_stat - ci * se}`);
+print(` Upper bound: ${test_stat + ci * se}`);
+print(` The 95% confidence interval is ${test_stat - ci * se} to ${test_stat + ci * se}. This means that, for my sample, I am 95% confident that the true population proportion is between these two values.`);
+print();
+print();
+
+print(`Putting all the calculation together in the Inference.Mean function, we get:`);
+
+inf = stats.Inference.Mean(data, {
+    null: 7,
+    confidence: 0.95,
+});
+print(inf);
+print(inf.descriptions.x);
+print(inf.descriptions.se);
+print(inf.descriptions.t);
+print(inf.descriptions.p_value);
+print(inf.descriptions.ci);
+print();
+print();
+print();
+print();
 

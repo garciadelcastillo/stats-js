@@ -14,6 +14,7 @@
     "colors": "^1.4.0",
     "csv": "^6.3.8",
     "csv-parse": "^5.5.5",
+    "jStat": "^1.8.6",
     "nodemon": "^3.1.0",
     "simple-ascii-chart": "^4.0.6"
   }

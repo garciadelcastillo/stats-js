@@ -1,4 +1,7 @@
-const stdlib_tcdf = require('@stdlib/stats/base/dists/t/cdf');
+// I give up, I'm not going to write a whole statistics library from scratch.
+// Will use some help for complex distributions, CDFs, inverse CDFs, etc.
+var { jStat } = require('jStat');
+
 
 const TAU = 2 * Math.PI;
 const SQRT_TAU = Math.sqrt(TAU);
@@ -1287,7 +1290,7 @@ ProbabilityFunctions.StandardNormalCDF = () => ProbabilityFunctions.NormalCDF(0,
 
 
 /**
- * Computes the probability density function for a (Student's) t-distribution 
+ * Returns the probability density function for a (Student's) t-distribution 
  * with the given degrees of freedom v. This distribution is similar to the
  * normal distribution, but the tails are heavier, especially for small v.
  * @param {*} v Degrees of freedom of the t-distribution.
@@ -1318,15 +1321,46 @@ function _gammaFunction(x) {
 }
 
 
-
+/**
+ * Returns the cumulative distribution function (CDF) for a Student's 
+ * t-distribution with the given degrees of freedom df. The CDF gives 
+ * the probability that a random variable X will take a value 
+ * LESS THAN OR EQUAL to x.
+ * @param {*} df Degrees of freedom of the t-distribution.
+ * @returns 
+ */
 ProbabilityFunctions.TCDF = function(df) {
   // ChatGPT couldn't take this one... so I'm using a library!
+  
+  // For testing: 
+  // https://www.danielsoper.com/statcalc/calculator.aspx?id=41
   function cdf(x) {
-    return stdlib_tcdf(x, df);
+    return jStat.studentt.cdf(x, df);
   }
 
   return cdf;
 }
+
+/**
+ * Returns the inverse cumulative distribution function (CDF) for a Student's t-distribution
+ * for the given degrees of freedom. The inverse CDF gives the value x such that
+ * the probability that a random variable X will take a value LESS THAN OR EQUAL to x is p.
+ * In other words, for a probability p, this function will return the value x 
+ * such that P(X ≤ x) = p.
+ * @param {*} df Degrees of freedom of the t-distribution.
+ * @returns 
+ */
+ProbabilityFunctions.TInvCDF = function(df) {
+  // ChatGPT couldn't take this one... so I'm using a library!
+
+  function icdf(p) {
+    return jStat.studentt.inv(p, df);
+  }
+
+  return icdf;
+}
+
+
 
 
 
@@ -1393,7 +1427,8 @@ Inference.Proportion = function (sample, options) {
   const se = Math.sqrt(options.null * (1 - options.null) / sample.length);
   const z = zScore(p, options.null, se);
   const cdf = ProbabilityFunctions.StandardNormalCDF();
-  const p_value = 1 - cdf(z);
+  const p_value = 1 - cdf(z);  // greater
+  const direction = "greater";
 
   // Compute the confidence interval for the population proportion
   // (unrelated to the null hypothesis, but based on the sample proportion)
@@ -1408,6 +1443,7 @@ Inference.Proportion = function (sample, options) {
     se,
     z,
     p_value,
+    direction,
     ci_lower_bound,
     ci_upper_bound,
     descriptions: {
@@ -1418,6 +1454,58 @@ Inference.Proportion = function (sample, options) {
       ci: 'The ' + options.confidence * 100 + '% confidence interval for the true proportion of successes in the population is: [' + ci_lower_bound.toFixed(3) + ', ' + ci_upper_bound.toFixed(3) + ']. This means that, given this sample, we are ' + options.confidence * 100 + '% confident that the true proportion of successes in the population is within this interval.',
     }
   };
+}
+
+
+
+/**
+ * Computes theory-based inference for a Single Mean. 
+ * @param {*} sample The random variable sample.
+ * @param {*} options Object with the following properties:
+ * - null: The null hypothesis value for the mean.
+ * - confidence: The confidence level for the confidence interval.
+ * @returns 
+ */
+Inference.Mean = function (sample, options) {
+  // Checks
+  if (sample.length < 30)
+    console.log('Warning: at least 30 samples are recommended for a good approximation.');
+
+  // Compute the sample mean
+  const x = mean(sample);
+
+  // Compute values related to the null hypothesis
+  const s = standardDeviation(sample);
+  const se = s / Math.sqrt(sample.length);
+  const t = zScore(x, options.null, se);
+  const cdf = ProbabilityFunctions.TCDF(sample.length - 1);
+  const p_value = 2 * cdf(-Math.abs(t));  // two-tailed
+  const direction = "two-tailed";
+
+  // Compute the confidence interval for the population mean
+  // (unrelated to the null hypothesis, but based on the sample mean)
+  const icdf = ProbabilityFunctions.TInvCDF(sample.length - 1);
+  const ci = icdf(options.confidence + 0.5 * (1 - options.confidence));
+  const ci_lower_bound = x - ci * se;
+  const ci_upper_bound = x + ci * se;
+
+  return {
+    ...options,
+    x,
+    se,
+    t,
+    p_value,
+    direction,
+    ci_lower_bound,
+    ci_upper_bound,
+    descriptions: {
+      x: 'The computed mean x̄ of this sample: ' + x.toFixed(3),
+      se: 'Assuming the null hypothesis is true, the estimated standard error in this sample is: ' + se.toFixed(3),
+      t: 'Assuming the null hypothesis is true, the t-score for x̄ in this sample is: ' + t.toFixed(3) + ', which means x̄ is ' + t.toFixed(3) + ' Standard Errors away from the null, which is considered ' + (Math.abs(t) < 2 ? 'non-significant' : Math.abs(t) < 3 ? 'UNUSUAL' : 'VERY UNUSUAL'),
+      p_value: 'Assuming the null hypothesis is true, the p-value of x̄ in this sample is: ' + p_value.toFixed(3) + ', which is considered ' + (p_value > 0.05 ? 'non-significant' : p_value > 0.01 ? 'UNUSUAL' : 'VERY UNUSUAL'),
+      ci: 'The ' + options.confidence * 100 + '% confidence interval for the true mean of the population is: [' + ci_lower_bound.toFixed(3) + ', ' + ci_upper_bound.toFixed(3) + ']. This means that, given this sample, we are ' + options.confidence * 100 + '% confident that the true mean of the population is within this interval.',
+    }
+  }
 }
 
 
