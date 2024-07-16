@@ -149,7 +149,7 @@ function meanDeviation(x) {
  * @returns 
  */
 function variance(x) {
-  // Diff between _sample_ and _polulation_ varian0ce:
+  // Diff between _sample_ and _polulation_ variance:
   // https://www.ncl.ac.uk/webtemplate/ask-assets/external/maths-resources/statistics/descriptive-statistics/variance-and-standard-deviation.html
   const avg = mean(x);
   let sum = 0;
@@ -1540,6 +1540,94 @@ Inference.Mean = function(sample, options) {
     }
   }
 }
+
+/**
+ * Compute the theory-based Confidence Interval for a Single Mean.
+ * @param {*} mean Sample mean
+ * @param {*} sd Sample standard deviation
+ * @param {*} n Sample size
+ * @param {*} confidence Target confidence level
+ * @param {*} direction ["two-tailed", "less", "greater"]
+ * @returns 
+ */
+Inference.Mean.CI = function(mean, sd, n, confidence, direction = "two-tailed") {
+  // Confidence Interval only
+  const se = sd / Math.sqrt(n);
+  const icdf = ProbabilityFunctions.TInvCDF(n - 1);
+  let tstar, ci_lower_bound, ci_upper_bound;
+  if (direction === "two-tailed") {
+    tstar = icdf(confidence + 0.5 * (1 - confidence));
+    ci_lower_bound = mean - tstar * se;
+    ci_upper_bound = mean + tstar * se;
+  } else if (direction === "less") {
+    tstar = icdf(confidence);
+    ci_lower_bound = -Infinity;
+    ci_upper_bound = mean + tstar * se;
+  } else if (direction === "greater") {
+    tstar = icdf(confidence);
+    ci_lower_bound = mean - tstar * se;
+    ci_upper_bound = Infinity;
+  }
+  
+  return {
+    mean, 
+    sd,
+    n,
+    confidence,
+    direction,
+    se, 
+    ci_lower_bound,
+    ci_upper_bound,
+    descriptions: {
+      ci: 'The ' + confidence * 100 + '% confidence interval for the true mean of the population is: [' + ci_lower_bound.toFixed(3) + ', ' + ci_upper_bound.toFixed(3) + ']. This means that, given the mean and sd of this sample, we are ' + confidence * 100 + '% confident that the true mean of the population is within this interval.',
+    }
+  }
+}
+
+
+/**
+ * Compute the theory-based Hypothesis Testing for a Single Mean.
+ * @param {*} nullMean Null hypothesis mean μ
+ * @param {*} altMean Alternative hypothesis mean μ
+ * @param {*} altSd Alternative hypothesis standard deviation σ
+ * @param {*} n Sample size
+ * @param {*} direction ["two-tailed", "less", "greater"]
+ * @returns 
+ */
+Inference.Mean.TestHypothesis = function(nullMean, altMean, altSd, n, direction = "two-tailed") { 
+  // Hypothesis Testing only: figure out the t-score and p-value
+  const se = altSd / Math.sqrt(n);
+  const t = zScore(altMean, nullMean, se);
+  const cdf = ProbabilityFunctions.TCDF(n - 1);
+  let p_value;
+  if (direction === "two-tailed") {
+    p_value = 2 * cdf(-Math.abs(t));  // two-tailed
+  }
+  else if (direction === "less") {
+    p_value = cdf(t);
+  }
+  else if (direction === "greater") {
+    p_value = cdf(-t);
+  }
+  
+  return {
+    nullMean,
+    altMean,
+    altSd,
+    n,
+    direction,
+    se,
+    t,
+    p_value,
+    descriptions: {
+      t: `Assuming the null hypothesis is true (μ_0 = ${nullMean}), the t-score for μ_a = ${altMean} in this sample is: ` + t.toFixed(3) + ', which means μ_a is ' + t.toFixed(3) + ' Standard Errors away from the null μ_0, which is considered ' + (Math.abs(t) < 2 ? 'non-significant' : Math.abs(t) < 3 ? 'UNUSUAL' : 'VERY UNUSUAL'),
+      p_value: `Assuming the null hypothesis is true (μ_0 = ${nullMean}), the p-value of μ_a = ${altMean} in this sample is p = ` + p_value.toFixed(3) + ', which is considered ' + (p_value > 0.05 ? 'non-significant' : p_value > 0.01 ? 'UNUSUAL' : 'VERY UNUSUAL'),
+    }
+  }
+}
+
+
+
 
 
 /**
