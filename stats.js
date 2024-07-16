@@ -1340,6 +1340,74 @@ function computeProbabilityDistribution(probFunc, start = -1, end = 1, step = 0.
 
 
 
+// ██╗███╗   ██╗███████╗███████╗██████╗ ███████╗███╗   ██╗ ██████╗███████╗
+// ██║████╗  ██║██╔════╝██╔════╝██╔══██╗██╔════╝████╗  ██║██╔════╝██╔════╝
+// ██║██╔██╗ ██║█████╗  █████╗  ██████╔╝█████╗  ██╔██╗ ██║██║     █████╗  
+// ██║██║╚██╗██║██╔══╝  ██╔══╝  ██╔══██╗██╔══╝  ██║╚██╗██║██║     ██╔══╝  
+// ██║██║ ╚████║██║     ███████╗██║  ██║███████╗██║ ╚████║╚██████╗███████╗
+// ╚═╝╚═╝  ╚═══╝╚═╝     ╚══════╝╚═╝  ╚═╝╚══════╝╚═╝  ╚═══╝ ╚═════╝╚══════╝
+//                                                                        
+
+class Inference {};
+
+options = {
+  success: 1,
+  null: 0.25,
+  confidence: 0.95,
+};
+
+
+/**
+ * Computes theory-based inference for a Single Proportion. 
+ * @param {*} sample The random variable sample.
+ * @param {*} options Object with the following properties:
+ * - success: The value of the success in the sample.
+ * - null: The null hypothesis value for the proportion.
+ * - confidence: The confidence level for the confidence interval.
+ * @returns 
+ */
+Inference.Proportion = function(sample, options) {
+  const successes = sample.filter(x => x === options.success);
+  
+  // Checks
+  if (successes.length < 10 || sample.length - options.success.length < 10) 
+    console.log('Warning: at least 10 successes and 10 failures are recommended for a good approximation.');
+
+  // Compute the sample proportion
+  const p = successes.length / sample.length;
+
+  // Compute values related to the null hypothesis
+  const se = Math.sqrt(options.null * (1 - options.null) / sample.length);
+  const z = zScore(p, options.null, se);
+  const cdf = ProbabilityFunctions.StandardNormalCDF();
+  const p_value = 1 - cdf(z);
+
+  // Compute the confidence interval for the population proportion
+  // (unrelated to the null hypothesis, but based on the sample proportion)
+  const icdf = ProbabilityFunctions.NormalInvCDF(0, 1);
+  const ci = icdf(options.confidence + 0.5 * (1 - options.confidence));
+  const ci_lower_bound = p - ci * se;
+  const ci_upper_bound = p + ci * se;
+
+  return {
+    ...options,
+    p,
+    se,
+    z,
+    p_value,
+    ci_lower_bound,
+    ci_upper_bound,
+    descriptions: {
+      p: 'The computed proportion p̂ of successes`' + options.success + '` in this sample: ' + p.toFixed(3),
+      se: 'Assuming the null hypothesis is true, the estimated standard error in this sample is: ' + se.toFixed(3),
+      z: 'Assuming the null hypothesis is true, the z-score for p̂ in this sample is: ' + z.toFixed(3) + ', which means p̂ is ' + z.toFixed(3) + ' Standard Errors away from the null, which is considered ' + (Math.abs(z) < 2 ? 'non-significant' : Math.abs(z) < 3 ? 'UNUSUAL' : 'VERY UNUSUAL'),
+      p_value: 'Assuming the null hypothesis is true, the p-value of p̂ in this sample is: ' + p_value.toFixed(3) + ', which is considered ' + (p_value > 0.05 ? 'non-significant' : p_value > 0.01 ? 'UNUSUAL' : 'VERY UNUSUAL'),
+      ci: 'The ' + options.confidence * 100 + '% confidence interval for the true proportion of successes in the population is: [' + ci_lower_bound.toFixed(3) + ', ' + ci_upper_bound.toFixed(3) + ']. This means that, given this sample, we are ' + options.confidence * 100 + '% confident that the true proportion of successes in the population is within this interval.',
+    }
+  };
+}
+
+
 
 
 
@@ -1402,4 +1470,6 @@ module.exports = {
 
   ProbabilityFunctions,
   computeProbabilityDistribution,
+
+  Inference,
 };
