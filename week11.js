@@ -617,3 +617,19 @@ print();
 print();
 print();
 
+
+print(`Using these methods, we can estimate sample sizes for a study before we start, in order to achieve a desired margin of error and confidence level.`);
+print(`The process is basically using the formula for the standard error of the desired proportion, and solving for n.`);
+print(`In the case of a proportion, the formula is:`);
+print();
+print(`  ${"z* sqrt(p(1-p)/n) <= ME ".bold.red}`);
+print();
+print(`Solving for n:`)
+print(`  ${"n >= (p(1-p)z*^2) / ME^2".bold.red}`);
+print();
+
+ci = 0.95
+me = 0.02
+p = 0.5;
+n =  stats.SampleSize.Proportion(ci, me, p);
+print(`For example, for a ${ci * 100}% confidence level and a margin of error of ${me}, the sample size required is`, n);

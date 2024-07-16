@@ -1335,6 +1335,7 @@ ProbabilityFunctions.TCDF = function(df) {
   // For testing: 
   // https://www.danielsoper.com/statcalc/calculator.aspx?id=41
   function cdf(x) {
+    // http://jstat.github.io/distributions.html#jStat.studentt.inv
     return jStat.studentt.cdf(x, df);
   }
 
@@ -1354,6 +1355,7 @@ ProbabilityFunctions.TInvCDF = function(df) {
   // ChatGPT couldn't take this one... so I'm using a library!
 
   function icdf(p) {
+    // http://jstat.github.io/distributions.html#jStat.studentt.inv
     return jStat.studentt.inv(p, df);
   }
 
@@ -1395,18 +1397,27 @@ function computeProbabilityDistribution(probFunc, start = -1, end = 1, step = 0.
 // ╚═╝╚═╝  ╚═══╝╚═╝     ╚══════╝╚═╝  ╚═╝╚══════╝╚═╝  ╚═══╝ ╚═════╝╚══════╝
 //                                                                        
 
+
+/**
+ * Contains a set of functions to perform statistical inference
+ * on differente combinations of random variable types.
+ */
 class Inference {};
 
-options = {
-  success: 1,
-  null: 0.25,
-  confidence: 0.95,
-};
+
+/**
+ * Contains functions to estimate the sample size needed for a given 
+ * confidence level and margin of error, for different combinations 
+ * of random variable types.
+ */
+class SampleSize {};
+
+
 
 
 /**
  * Computes theory-based inference for a Single Proportion. 
- * @param {*} sample The random variable sample.
+ * @param {*} sample The random RESPONSE variable sample.
  * @param {*} options Object with the following properties:
  * - success: The value of the success in the sample.
  * - null: The null hypothesis value for the proportion.
@@ -1457,10 +1468,34 @@ Inference.Proportion = function (sample, options) {
 }
 
 
+/**
+ * 
+ * @param {*} confidence Desired level of confidence [0.0-1.0]
+ * @param {*} me Desired margin of error on our interval. 
+ * @param {*} p Estimated proportion of successes in the population. 
+ * This value should be estimated from previous studies or pilot studies.
+ * Use 0.5 as the most conservatible value if no previous information 
+ * is available. 
+ */
+SampleSize.Proportion = function(confidence, me, p = 0.5) {
+
+  // Compute the confidence interval for the population proportion
+  // (unrelated to the null hypothesis, but based on the sample proportion)
+  const icdf = ProbabilityFunctions.NormalInvCDF(0, 1);
+  const ci = icdf(confidence + 0.5 * (1 - confidence));
+
+  const n = Math.ceil( ( p * (1 - p) * ci * ci) / (me * me) );
+
+  return n;
+}
+
+
+
+
 
 /**
  * Computes theory-based inference for a Single Mean. 
- * @param {*} sample The random variable sample.
+ * @param {*} sample The random RESPONSE variable sample.
  * @param {*} options Object with the following properties:
  * - null: The null hypothesis value for the mean.
  * - confidence: The confidence level for the confidence interval.
@@ -1507,6 +1542,13 @@ Inference.Mean = function (sample, options) {
     }
   }
 }
+
+
+
+
+
+
+
 
 
 
@@ -1573,4 +1615,5 @@ module.exports = {
   computeProbabilityDistribution,
 
   Inference,
+  SampleSize,
 };
