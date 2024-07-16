@@ -714,3 +714,23 @@ print();
 print();
 print();
 print();
+
+
+print(`Correlation: We want to determine if age and hours worked per week have a positive linear relationship.`)
+
+inf = stats.Inference.Correlation(acs_adults, {
+    variables: ["Age", "HoursWk"],
+    confidence: 0.95,
+    direction: "greater",
+    // direction: "less",
+});
+print(inf);
+print("RESULTS:")
+for (let key in inf.descriptions) {
+    print("  " + inf.descriptions[key].green);
+}
+print(`Looks like we can be very confident to ${"reject".red} that the average hours worked per week is the same between married and unmarried US residents.`)
+print();
+print();
+print();
+print();

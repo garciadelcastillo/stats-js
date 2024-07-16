@@ -8,6 +8,9 @@ const SQRT_TAU = Math.sqrt(TAU);
 const SQRT_PI = Math.sqrt(Math.PI);
 const SQRT_2 = Math.sqrt(2);
 
+const print = console.log;
+
+
 
 //  █████╗ ██████╗ ██╗████████╗██╗  ██╗███╗   ███╗███████╗████████╗██╗ ██████╗
 // ██╔══██╗██╔══██╗██║╚══██╔══╝██║  ██║████╗ ████║██╔════╝╚══██╔══╝██║██╔════╝
@@ -1709,6 +1712,77 @@ Inference.DifferenceInMeans = function(sample, options) {
 }
 
 
+/**
+ * 
+ * @param {*} sample A data frame with the two variables of interest.
+ * @param {*} options An object with the following properties:
+ * - variables: An array with the two variables of interest, e.g. ["Age", "HoursWk"]
+ * - confidence: The confidence level for the confidence interval, e.g. 0.95
+ * - direction: The direction of the correlation, ["two-tailed" | "greater" | "less"]
+ * @returns 
+ */
+Inference.Correlation = function(sample, options) {
+  // Extract the two samples:
+  const x = sample.map(x => x[options.variables[0]]);
+  const y = sample.map(x => x[options.variables[1]]);
+
+  // Checks
+  if (x.length < 30 || y.length < 30)
+    console.log('Warning: at least 30 samples are recommended for a good approximation.');
+    
+  // Compute the correlation coefficient
+  const r = correlation(x, y);
+  const df = x.length - 2;
+  const se = Math.sqrt((1 - r * r) / df);
+  const z = zScore(r, 0, se);
+  const cdf = ProbabilityFunctions.TCDF(df);
+  const direction = options.direction || "two-tailed";
+  let p_value = 0;
+  if (direction == "two-tailed")
+    p_value = 2 * cdf(-Math.abs(z)); 
+  else if (direction == "greater")
+    p_value = 1 - cdf(z);
+  else if (direction == "less")
+    p_value = cdf(z);
+
+  // Compute the confidence interval for the correlation coefficient
+  const icdf = ProbabilityFunctions.TInvCDF(df);
+  let ci, ci_lower_bound, ci_upper_bound;
+  if (direction == "two-tailed") {
+    ci = icdf(options.confidence + 0.5 * (1 - options.confidence));
+    ci_lower_bound = r - ci * se;
+    ci_upper_bound = r + ci * se;
+  }
+  else if (direction == "greater") {
+    ci = icdf(options.confidence);
+    ci_lower_bound = r - ci * se;
+    ci_upper_bound = 1;
+  } 
+  else if (direction == "less") {
+    ci = icdf(options.confidence);
+    ci_lower_bound = -1;
+    ci_upper_bound = r + ci * se;
+  }  
+ 
+  return {
+    ...options,
+    r,
+    df,
+    se,
+    z,
+    p_value,
+    direction,
+    ci_lower_bound,
+    ci_upper_bound,
+    descriptions: {
+      r: `The computed correlation coefficient between the variables '${options.variables[0]}' and '${options.variables[1]}' is: ` + r.toFixed(3),
+      se: 'The estimated standard error in this sample is: ' + se.toFixed(3),
+      z: 'The z-score for the correlation coefficient is: ' + z.toFixed(3) + ', which means the correlation coefficient is ' + z.toFixed(3) + ' Standard Errors away from the null, which is considered ' + (Math.abs(z) < 2 ? 'non-significant' : Math.abs(z) < 3 ? 'UNUSUAL' : 'VERY UNUSUAL'),
+      p_value: 'The p-value of the correlation coefficient is: ' + p_value.toFixed(3) + ', which is considered ' + (p_value > 0.05 ? 'non-significant' : p_value > 0.01 ? 'UNUSUAL' : 'VERY UNUSUAL'),
+      ci: 'The ' + options.confidence * 100 + '% confidence interval for the correlation coefficient is: [' + ci_lower_bound.toFixed(3) + ', ' + ci_upper_bound.toFixed(3) + ']. This means that, given this sample, we are ' + options.confidence * 100 + '% confident that the true correlation coefficient is within this interval.',
+    }
+  }
+}
 
 
 
