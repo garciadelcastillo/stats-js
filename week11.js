@@ -666,19 +666,23 @@ let acs = csv.parse(fs.readFileSync('sample_data/ACS.csv', 'utf8'), {
     delimiter: ','
 });
 
-print(`Difference in Proportions:
-Let’s try to determine if there’s a relationship between US citizenship and marriage status.`);
+// Turn certain columns into numbers
+acs = acs.map(d => {
+    d['Age'] = parseInt(d['Age']);
+    d['USCitizen'] = parseInt(d['USCitizen']);
+    d['Married'] = parseInt(d['Married']);
+    d['HoursWk'] = parseInt(d['HoursWk']);
+    return d;
+});
+
+print(`Difference in Proportions: Let’s try to determine if there’s a relationship between US citizenship and marriage status.`);
 
 acs_adults = acs.filter(d => parseInt(d['Age']) >= 18);
 // print(`Imported this many adults: `, acs_adults.length);
-data = [
-    acs_adults.filter(d => d['USCitizen'] == '0'),
-    acs_adults.filter(d => d['USCitizen'] == '1'),
-];
 
 inf = stats.Inference.DifferenceInProportions(acs_adults, {
     variables: ["USCitizen", "Married"],
-    success: ["1", "1"],
+    success: [1, 1],
     // null: 0.5,  // assume the proportion is 50%  (I don't think this is correct, the null is the difference in proportions, which should be 0)
     confidence: 0.95,
 });
@@ -687,3 +691,26 @@ print("RESULTS:")
 for (let key in inf.descriptions) {
     print("  " + inf.descriptions[key].green);
 }
+print();
+print();
+print();
+print();
+
+
+print(`Difference in Means: Let’s estimate the average hours worked per week between married and unmarried US residents.`)
+
+inf = stats.Inference.DifferenceInMeans(acs_adults, {
+    variables: ["Married", "HoursWk"],
+    success: [1],
+    confidence: 0.95,
+});
+// print(inf);
+print("RESULTS:")
+for (let key in inf.descriptions) {
+    print("  " + inf.descriptions[key].green);
+}
+print(`Looks like we can be very confident to ${"reject".red} that the average hours worked per week is the same between married and unmarried US residents.`)
+print();
+print();
+print();
+print();

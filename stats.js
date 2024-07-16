@@ -1496,7 +1496,7 @@ SampleSize.Proportion = function(confidence, me, p = 0.5) {
  * - confidence: The confidence level for the confidence interval.
  * @returns 
  */
-Inference.Mean = function (sample, options) {
+Inference.Mean = function(sample, options) {
   // Checks
   if (sample.length < 30)
     console.log('Warning: at least 30 samples are recommended for a good approximation.');
@@ -1568,7 +1568,7 @@ SampleSize.Mean = function(confidence, me, s) {
  * // - null: The null hypothesis value the proportions, e.g. 0.5 for equal proportions.
  * @returns 
  */
-Inference.DifferenceInProportions = function (sample, options) {
+Inference.DifferenceInProportions = function(sample, options) {
   // Extract the two samples
   const x0 = sample.filter(x => x[options.variables[0]] != options.success[0]);
   const x1 = sample.filter(x => x[options.variables[0]] == options.success[0]);
@@ -1639,6 +1639,74 @@ Inference.DifferenceInProportions = function (sample, options) {
 }
 
 
+
+/**
+ * Computes the theory-based inference for Difference in Means. 
+ * @param {*} sample A data frame with the two variables of interest.
+ * @param {*} options An object with the following properties:
+ * - variables: An array with the two variables of interest, e.g. ["USCitizen", "HoursWk"]
+ * - success: An array with the success value for the categorical variable, e.g. [true]
+ * - confidence: The confidence level for the confidence interval, e.g. 0.95
+ * @returns 
+ */
+Inference.DifferenceInMeans = function(sample, options) {
+  // Extract the two samples:
+  const x0 = sample.filter(x => x[options.variables[0]] != options.success[0]);
+  const x1 = sample.filter(x => x[options.variables[0]] == options.success[0]);
+
+  // Checks
+  if (x0.length < 30 || x1.length < 30)
+    console.log('Warning: at least 30 samples are recommended for a good approximation.');
+    
+  const x0response = x0.map(x => x[options.variables[1]]);
+  const x1response = x1.map(x => x[options.variables[1]]);
+  const x0mean = mean(x0response);
+  const x1mean = mean(x1response);
+  
+  // // Log
+  // console.log(`${options.variables[0]} (not) ${options.success[0]}: ${x0.length}, mean('${options.variables[1]}') = ${x0mean.toFixed(2)}`);
+  // console.log(`${options.variables[0]} ${options.success[0]}: ${x1.length}, mean('${options.variables[1]}') = ${x1mean.toFixed(2)}`);
+
+  // Compute values related to the null hypothesis
+  const estimate = x1mean - x0mean;
+  const s0 = standardDeviation(x0response);
+  const s1 = standardDeviation(x1response);
+  const se = Math.sqrt(s0 * s0 / x0.length + s1 * s1 / x1.length);
+  const z = zScore(estimate, 0, se); 
+  const df = Math.min(x0.length, x1.length) - 1;
+  const cdf = ProbabilityFunctions.TCDF(df);
+  const p_value = 2 * cdf(-Math.abs(z));  // two-tailed
+  const direction = "two-tailed";
+
+  // Compute the confidence interval for the difference in means
+  const icdf = ProbabilityFunctions.TInvCDF(df);
+  const ci = icdf(options.confidence + 0.5 * (1 - options.confidence));
+  const ci_lower_bound = estimate - ci * se;
+  const ci_upper_bound = estimate + ci * se;
+
+  return {
+    ...options,
+    x0mean,
+    x1mean,
+    estimate,
+    se,
+    z,
+    p_value,
+    direction,
+    ci_lower_bound,
+    ci_upper_bound,
+    descriptions: {
+      x0mean: `The computed mean of the RESPONSE variable '${options.variables[1]}' for the EXPLANATORY variable '${options.variables[0]}' != '${options.success[0]}' is: ` + x0mean.toFixed(3),
+      x1mean: `The computed mean of the RESPONSE variable '${options.variables[1]}' for the EXPLANATORY variable '${options.variables[0]}' = '${options.success[0]}' is: ` + x1mean.toFixed(3),
+      estimate: 'The estimated difference in means is: ' + estimate.toFixed(3),
+      se: 'The estimated standard error in this sample is: ' + se.toFixed(3),
+      z: 'The z-score for the difference in means is: ' + z.toFixed(3) + ', which means the difference in means is ' + z.toFixed(3) + ' Standard Errors away from the null, which is considered ' + (Math.abs(z) < 2 ? 'non-significant' : Math.abs(z) < 3 ? 'UNUSUAL' : 'VERY UNUSUAL'),
+      p_value: 'The p-value of the difference in means is: ' + p_value.toFixed(3) + ', which is considered ' + (p_value > 0.05 ? 'non-significant' : p_value > 0.01 ? 'UNUSUAL' : 'VERY UNUSUAL'),
+      ci: 'The ' + options.confidence * 100 + '% confidence interval for the difference in means is: [' + ci_lower_bound.toFixed(3) + ', ' + ci_upper_bound.toFixed(3) + ']. This means that, given this sample, we are ' + options.confidence * 100 + '% confident that the true difference in means is within this interval.',
+    }
+  }
+
+}
 
 
 
