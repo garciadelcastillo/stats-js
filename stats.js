@@ -1481,6 +1481,7 @@ Inference.Proportion = function (sample, options) {
   const p = successes.length / sample.length;
 
   // Compute values related to the null hypothesis
+  // https://mcconvil.github.io/stat100s24/inference_summary.html
   const se = Math.sqrt(options.null * (1 - options.null) / sample.length);
   const z = zScore(p, options.null, se);
   const cdf = ProbabilityFunctions.StandardNormalCDF();
@@ -1594,16 +1595,18 @@ Inference.Mean = function(sample, options) {
   const x = mean(sample);
 
   // Compute values related to the null hypothesis
+  // https://mcconvil.github.io/stat100s24/inference_summary.html
   const s = standardDeviation(sample);
   const se = s / Math.sqrt(sample.length);
   const t = zScore(x, options.null, se);
-  const cdf = ProbabilityFunctions.TCDF(sample.length - 1);
+  const df = sample.length - 1;
+  const cdf = ProbabilityFunctions.TCDF(df);
   const p_value = 2 * cdf(-Math.abs(t));  // two-tailed
   const direction = "two-tailed";
 
   // Compute the confidence interval for the population mean
   // (unrelated to the null hypothesis, but based on the sample mean)
-  const icdf = ProbabilityFunctions.TInvCDF(sample.length - 1);
+  const icdf = ProbabilityFunctions.TInvCDF(df);
   const ci = icdf(options.confidence + 0.5 * (1 - options.confidence));
   const ci_lower_bound = x - ci * se;
   const ci_upper_bound = x + ci * se;
@@ -1613,6 +1616,7 @@ Inference.Mean = function(sample, options) {
     x,
     se,
     t,
+    df,
     p_value,
     direction,
     ci_lower_bound,
@@ -1778,6 +1782,7 @@ Inference.DifferenceInProportions = function(sample, options) {
   // const se2sq = options.null * (1 - options.null) / x1.length;
 
   // Compute values related to the null hypothesis
+  // https://mcconvil.github.io/stat100s24/inference_summary.html
   // The null hypothesis is that the two proportions are equal, i.e. a value of 0. 
   // But this throws off the calculation of the standard error? 
   // If set to 0.5, it matches the results in class.
@@ -1849,6 +1854,7 @@ Inference.DifferenceInMeans = function(sample, options) {
   // console.log(`${options.variables[0]} ${options.success[0]}: ${x1.length}, mean('${options.variables[1]}') = ${x1mean.toFixed(2)}`);
 
   // Compute values related to the null hypothesis
+  // https://mcconvil.github.io/stat100s24/inference_summary.html
   const estimate = x2mean - x1mean;
   const s0 = standardDeviation(x1response);
   const s1 = standardDeviation(x2response);
