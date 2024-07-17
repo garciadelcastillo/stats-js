@@ -247,6 +247,10 @@ Let's see if I can replicate some results from the slides: Hollywood movies, rel
 (see stat100_wk12wed.pdf)
 `);
 
+print(`
+Computing the F value of the movie ratings by genre:
+`.yellow)
+
 let hollywood_movies = csv.parse(fs.readFileSync('sample_data/HollywoodMovies2011.csv', 'utf8'), {
   columns: true,
   skip_empty_lines: true,
@@ -287,15 +291,26 @@ let sse = stats.sumOfSquaresError(movies, {
   // groups: ['Horror', 'Action'],
 });
 print(`SSE: ${sse}`);
+print();
+
+print(`Check: is SST = SSG + SSE?`.yellow);
+print(`SST: ${sst}, SSG + SSE: ${ssg + sse}`.red);
+print();
 
 let MSG = ssg / (genres.length - 1);
 let MSE = sse / (movies.length - genres.length);
 let F = MSG / MSE;
-print(`MSG: ${MSG}, MSE: ${MSE}`);
+print(`MSG: ${MSG}`);
+print(`MSE: ${MSE}`);
 print(`F: ${F} !!!! 💪`.red);
+print();
 
+print(`In one function:`.yellow);
 F = stats.fValue(movies, {
   variable: 'AudienceScore',
   category: 'Genre'
 });
 print(`F: ${F} !!!! 💪`.red);
+
+
+
