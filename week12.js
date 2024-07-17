@@ -225,3 +225,77 @@ print(inf_prices_air);
 
 
 print(`Yeah, I can't quite figure it out... 😭`.red); 
+print();
+print();
+print();
+print();
+
+
+print(`
+//  █████╗ ███╗   ██╗ ██████╗ ██╗   ██╗ █████╗ 
+// ██╔══██╗████╗  ██║██╔═══██╗██║   ██║██╔══██╗
+// ███████║██╔██╗ ██║██║   ██║██║   ██║███████║
+// ██╔══██║██║╚██╗██║██║   ██║╚██╗ ██╔╝██╔══██║
+// ██║  ██║██║ ╚████║╚██████╔╝ ╚████╔╝ ██║  ██║
+// ╚═╝  ╚═╝╚═╝  ╚═══╝ ╚═════╝   ╚═══╝  ╚═╝  ╚═╝
+//                                             
+// ANOVA testing
+`);
+
+print(`
+Let's see if I can replicate some results from the slides: Hollywood movies, relation between genre and audience score:
+(see stat100_wk12wed.pdf)
+`);
+
+let hollywood_movies = csv.parse(fs.readFileSync('sample_data/HollywoodMovies2011.csv', 'utf8'), {
+  columns: true,
+  skip_empty_lines: true,
+  delimiter: ','
+});
+
+let movies = hollywood_movies.filter(d => d.Genre != 'NA' &&
+                                          d.Genre != 'Fantasy' &&
+                                          d.Genre != 'Adventure' &&
+                                          d.Genre != '' &&
+                                          d.AudienceScore != '')
+  .map(d => {
+    d.AudienceScore = +d.AudienceScore
+    return d;
+  });
+// print(movies);
+
+let genres = stats.unique(movies.map(d => d.Genre));
+print(genres);
+
+let scores = movies.map(d => d.AudienceScore);
+
+let sst = stats.sumOfSquaresTotal(scores);
+print(`SST: ${sst}`);
+
+let ssg = stats.sumOfSquaresGroup(movies, {
+  variable: 'AudienceScore',
+  category: 'Genre',
+  // groups: genres,
+  // groups: ['Horror', 'Action'],
+});
+print(`SSG: ${ssg}`);
+
+let sse = stats.sumOfSquaresError(movies, {
+  variable: 'AudienceScore',
+  category: 'Genre',
+  // groups: genres,
+  // groups: ['Horror', 'Action'],
+});
+print(`SSE: ${sse}`);
+
+let MSG = ssg / (genres.length - 1);
+let MSE = sse / (movies.length - genres.length);
+let F = MSG / MSE;
+print(`MSG: ${MSG}, MSE: ${MSE}`);
+print(`F: ${F} !!!! 💪`.red);
+
+F = stats.fValue(movies, {
+  variable: 'AudienceScore',
+  category: 'Genre'
+});
+print(`F: ${F} !!!! 💪`.red);

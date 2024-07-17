@@ -20,10 +20,6 @@ const print = console.log;
 // ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝   ╚═╝   ╚═╝  ╚═╝╚═╝     ╚═╝╚══════╝   ╚═╝   ╚═╝ ╚═════╝
 //                                                                            
 
-// A function that given an array of values, returns another
-// array with the [min, max] values
-
-
 /**
  * A function that given an array of values, returns another 
  * array with the [min, max] values
@@ -39,6 +35,23 @@ function extremes(array) {
   }
   return [min, max];
 }
+
+/**
+ * A function that given an array of values, returns an array
+ * with all its unique values. Useful for categorical data.
+ * @param {*} array An array of categorical values
+ * @returns 
+ */
+function unique(array) {
+  let unique = [];
+  for (let i = 0; i < array.length; i++) {
+    if (unique.indexOf(array[i]) == -1) {
+      unique.push(array[i]);
+    }
+  }
+  return unique;
+}
+
 
 
 
@@ -157,6 +170,10 @@ function variance(x) {
     sum += Math.pow(x[i] - avg, 2);
   }
   return sum / (x.length - 1);
+
+  // // Or using the sum of squares total: (untested)
+  // const sst = sumOfSquaresTotal(x);
+  // return sst / (x.length - 1);
 }
 
 /**
@@ -319,6 +336,172 @@ function factorial(n) {
   if (n === 0) return 1;
   return n * factorial(n - 1);
 }
+
+
+/**
+ * Computes Σ(xi - x̄)²
+ * @param {*} array An array of numbers
+ * @returns 
+ */
+function sumOfSquaresTotal(array) {
+  // SST = Σ(xi - x̄)²
+  const avg = mean(array);
+  print(avg);
+  const sst = array.reduce((acc, xi) => acc + Math.pow(xi - avg, 2), 0);
+  return sst;
+}
+
+
+/**
+ * Computes the sum of squares between groups, i.e. Σni(x̄i - x̄)²,
+ * where ni is the number of elements in group i, 
+ * x̄i is the mean of group i, and x̄ is the overall mean.
+ * This is a measure of the variability between groups.
+ * @param {*} data An array of objects with key-value pairs. 
+ * @param {*} opts An object with the following keys:
+ * - variable: The key of the variable to analyze
+ * - category: The key of the variable to group by
+ * - groups: An array of group names to use. If not provided, 
+ * the unique values of the category variable will be used.
+ * @returns 
+ */
+function sumOfSquaresGroup(data, opts) {
+  // First compute the mean of the variable across groups
+  const totalMean = mean(data.map(d => d[opts.variable]));
+
+  // Use optional group names or use unique values of the category variable
+  const groupValues = opts.groups || unique(data.map(d => d[opts.category]));
+
+  // Compute the sum of squares between groups
+  // SSG = Σni(x̄i - x̄)²
+  const ssg = groupValues.reduce((acc, group) => {
+    const groupData = data.filter(d => d[opts.category] === group);
+    const avg = mean(groupData.map(d => d[opts.variable]));
+    const n = groupData.length;
+    return acc + n * Math.pow(avg - totalMean, 2);
+  }, 0);
+  
+  return ssg;
+}
+
+
+/**
+ * Computes the sum of squares within groups, i.e. Σ(xi - x̄i)²,
+ * where xi is an element in group i and x̄i is the mean of group i.
+ * This is a measure of variability within groups.
+ * @param {*} data An array of objects with key-value pairs. 
+ * @param {*} opts An object with the following keys:
+ * - variable: The key of the variable to analyze
+ * - category: The key of the variable to group by
+ * - groups: An array of group names to use. If not provided, 
+ * the unique values of the category variable will be used.
+ * @returns 
+ */
+function sumOfSquaresError(data, opts) {
+  // Use optional group names or use unique values of the category variable
+  const groupValues = opts.groups || unique(data.map(d => d[opts.category]));
+
+  // Compute the sum of squares within groups
+  // SSE = Σ(xi - x̄i)²
+  const sse = groupValues.reduce((acc, group) => {
+    const groupData = data.filter(d => d[opts.category] === group);
+    const avg = mean(groupData.map(d => d[opts.variable]));
+    return acc + groupData.reduce((accG, d) => accG + Math.pow(d[opts.variable] - avg, 2), 0);
+  }, 0);
+
+  return sse;
+}
+
+
+
+/**
+ * Compute the mean square between groups, i.e. SSG / (k - 1).
+ * This is the mean variability between groups. * 
+ * @param {*} data An array of objects with key-value pairs. 
+ * @param {*} opts An object with the following keys:
+ * - variable: The key of the variable to analyze
+ * - category: The key of the variable to group by
+ * - groups: An array of group names to use. If not provided, 
+ * the unique values of the category variable will be used.
+ * @returns 
+ */
+function meanSquareGroup(data, opts) {
+  const ssg = sumOfSquaresGroup(data, opts);
+  const groupValues = opts.groups || unique(data.map(d => d[opts.category]));
+  return ssg / (groupValues.length - 1);
+};
+
+/**
+ * Compute the mean square error, i.e. SSE / (n - k).
+ * This is the mean variability within groups.
+ * @param {*} data An array of objects with key-value pairs. 
+ * @param {*} opts An object with the following keys:
+ * - variable: The key of the variable to analyze
+ * - category: The key of the variable to group by
+ * - groups: An array of group names to use. If not provided, 
+ * the unique values of the category variable will be used.
+ * @returns 
+ */
+function meanSquareError(data, opts) {
+  const sse = sumOfSquaresError(data, opts);
+  const groupValues = opts.groups || unique(data.map(d => d[opts.category]));
+  return sse / (data.length - groupValues.length);
+};
+
+/**
+ * Computes the F-value, i.e. MSG / MSE.
+ * This is the ratio of the mean variability between groups 
+ * to the mean variability within groups.
+ * @param {*} data An array of objects with key-value pairs. 
+ * @param {*} opts An object with the following keys:
+ * - variable: The key of the variable to analyze
+ * - category: The key of the variable to group by
+ * - groups: An array of group names to use. If not provided, 
+ * the unique values of the category variable will be used.
+ * @returns 
+ */
+function fValue(data, opts) {
+  const msg = meanSquareGroup(data, opts);
+  const mse = meanSquareError(data, opts);
+  print(msg, mse)
+  return msg / mse;
+};
+
+
+
+/**
+ * An alias for sumOfSquaresTotal()
+ */
+const SST = sumOfSquaresTotal;
+
+/**
+ * An alias for sumOfSquaresGroup()
+ */
+const SSG = sumOfSquaresGroup;
+
+/**
+ * An alias for sumOfSquaresError()
+ */
+const SSE = sumOfSquaresError;
+
+/**
+ * An alias for meanSquareGroup()
+ */
+const MSG = meanSquareGroup;
+
+/**
+ * An alias for meanSquareError()
+ */
+const MSE = meanSquareError;
+
+/**
+ * An alias for fValue()
+ */
+const F = fValue;
+
+
+
+
 
 
 
@@ -1990,6 +2173,7 @@ module.exports = {
   TAU,
   SQRT_TAU,
   extremes,
+  unique,
   sum,
   mean,
   meanDistribution,
@@ -2005,6 +2189,20 @@ module.exports = {
   quantile,
   histogram,
   factorial,
+  sumOfSquaresTotal,
+  sumOfSquaresGroup,
+  sumOfSquaresError,
+  meanSquareGroup,
+  meanSquareError,
+  fValue,
+  SST,
+  SSG,
+  SSE,
+  MSG,
+  MSE,
+  F,
+
+
 
   covariance,
   correlation,
