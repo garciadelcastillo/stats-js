@@ -553,7 +553,7 @@ function bootstrap(array, reps, statistic) {
 /**
  * Takes an array of arrays, and returns a copy where each array
  * has been shuffled.
- * @param {*} samples 
+ * @param {*} samples An array of arrays, like [resData, expData]
  * @returns 
  */
 function _permuteSamples(samples) {
@@ -578,16 +578,39 @@ function _permuteSamples(samples) {
  * The confidence interval is computed as the `level` quantile
  * of the sorted array of statistics. This is equivalent to
  * the percentile method of computing confidence intervals.
+ * NOTE: not sure if this is working well actually.
  * @param {*} array 
  * @param {*} level A number between 0 and 1, typically 0.95
+ * @param {*} direction "two-sided", "lower", or "upper"
  * @returns 
  */
-function confidenceInterval(array, level) {
+function confidenceInterval(array, level, direction = "two-sided") {
+  // JL: I don't think this is correct. This is simply
+  // returning the level-th element in the array...
+  // But wait, isn't that the definition of a quantile?
+
   const sorted = array.slice().sort((a, b) => a - b);
-  const lowerI = Math.max(Math.floor((1 - level) / 2 * array.length), 0);
-  const lower = sorted[lowerI];
-  const upperI = Math.min(Math.floor((1 + level) / 2 * array.length), array.length - 1);
-  const upper = sorted[upperI];
+  
+  let lowerI, lower, upperI, upper;
+  if (direction === "two-sided") {
+    lowerI = Math.max(Math.floor((1 - level) / 2 * array.length), 0);
+    lower = sorted[lowerI];
+    upperI = Math.min(Math.floor((1 + level) / 2 * array.length), array.length - 1);
+    upper = sorted[upperI];
+  } else if (direction === "lower") {
+    lowerI = 0;
+    lower = sorted[lowerI];
+    upperI = Math.min(Math.floor(level * array.length), array.length - 1);
+    upper = sorted[upperI];
+  } else if (direction === "upper") {
+    lowerI = Math.max(Math.floor((1 - level) * array.length), 0);
+    lower = sorted[lowerI];
+    upperI = array.length - 1;
+    upper = sorted[upperI];
+  } else {
+    throw new Error("Invalid direction");
+  }
+  
   return {
     lower,
     upper,
@@ -824,14 +847,13 @@ function _nullDistributionProportion(sample, reps, opts) {
 /**
  * Creates a null hypothesis distribution for a multi-variable data sample,
  * akin to R's `(res_var ~ exp_var)` formula. 
- * AS OF RIGHT NOW it only supports "Independence" and the "diff in means/ratios" statistic.
  * @param {*} samples An array of [res, exp] samples
  * @param {*} reps 
  * @param {*} opts Options objcet with the following properties:
  * {
     null: "independence",
-    statistic: "diff in means" | "diff in ratios" "diff in proportions"
-    types: ["numerical", "categorical"],  // in [res, exp] order
+    statistic: "diff in means" | "diff in ratios" "diff in proportions" | "correlation"
+    types: ["numerical", "categorical"] or ["numerical", "numerical"]  // in [res, exp] order
     order: (unique values of the cat variable in [0] - [1] order),
     }
  * @returns 
@@ -845,6 +867,9 @@ function nullDistributionMulti(samples, reps, opts) {
       case "diff in proportions":
       case "diff in ratios":
         return _nullDistributionPermutationDiffProportions(samples, reps, opts);
+
+      case "correlation":
+        return _nullDistributionPermutationCorrelation(samples, reps, opts);
     }
   }
 
@@ -921,6 +946,24 @@ function _nullDistributionPermutationDiffProportions(samples, reps, opts) {
 }
 
 
+/**
+ * Computes the null hypothesis distribution for the correlation of two
+ * numerical variables in a multi-variable data sample, using a permutation test.
+ * Assumes that the null hypothesis is independence, i.e. no correlation.
+ * @param {*} samples Nested array of [res, exp] samples
+ * @param {*} reps 
+ * @param {*} opts 
+ */
+function _nullDistributionPermutationCorrelation(samples, reps, opts) {
+  const correlations = Array.from({
+    length: reps
+  }, () => {
+    const permuted = _permuteSamples(samples);
+    return correlation(permuted[0], permuted[1]);
+  });
+
+  return correlations;
+}
 
 
 
@@ -1765,8 +1808,8 @@ Inference.DifferenceInProportions = function(sample, options) {
     ci_lower_bound,
     ci_upper_bound,
     descriptions: {
-      p1: `The computed proportion of successes in the RESPONSE variable '${options.variables[0]}' is: ` + p1.toFixed(3),
-      p2: `The computed proportion of successes in the EXPLANATORY/CONTROL variable '${options.variables[1]}' is: ` + p2.toFixed(3),
+      p1: `The proportion of successes (${options.variables[1]} == ${options.success[1]}) in the case (${options.variables[0]} != ${options.success[0]}) is p̂= ` + p1.toFixed(3),
+      p2: `The proportion of successes (${options.variables[1]} == ${options.success[1]}) in the case (${options.variables[0]} == ${options.success[0]}) is p̂= ` + p2.toFixed(3),
       se: 'Assuming null to be no difference in proportions, the estimated standard error in this sample is: ' + se.toFixed(3),
       z: 'Assuming null to be no difference in proportions, the z-score for the difference in proportions is: ' + z.toFixed(3) + ', which means the difference in proportions is ' + z.toFixed(3) + ' Standard Errors away from the null, which is considered ' + (Math.abs(z) < 2 ? 'non-significant' : Math.abs(z) < 3 ? 'UNUSUAL' : 'VERY UNUSUAL'),
       p_value: 'Assuming null to be no difference in proportions, the p-value of the difference in proportions is: ' + p_value.toFixed(3) + ', which is considered ' + (p_value > 0.05 ? 'non-significant' : p_value > 0.01 ? 'UNUSUAL' : 'VERY UNUSUAL'),
@@ -1789,29 +1832,29 @@ Inference.DifferenceInProportions = function(sample, options) {
  */
 Inference.DifferenceInMeans = function(sample, options) {
   // Extract the two samples:
-  const x0 = sample.filter(x => x[options.variables[0]] != options.success[0]);
-  const x1 = sample.filter(x => x[options.variables[0]] == options.success[0]);
+  const x1 = sample.filter(x => x[options.variables[0]] != options.success[0]);
+  const x2 = sample.filter(x => x[options.variables[0]] == options.success[0]);
 
   // Checks
-  if (x0.length < 30 || x1.length < 30)
+  if (x1.length < 30 || x2.length < 30)
     console.log('Warning: at least 30 samples are recommended for a good approximation.');
     
-  const x0response = x0.map(x => x[options.variables[1]]);
   const x1response = x1.map(x => x[options.variables[1]]);
-  const x0mean = mean(x0response);
+  const x2response = x2.map(x => x[options.variables[1]]);
   const x1mean = mean(x1response);
+  const x2mean = mean(x2response);
   
   // // Log
   // console.log(`${options.variables[0]} (not) ${options.success[0]}: ${x0.length}, mean('${options.variables[1]}') = ${x0mean.toFixed(2)}`);
   // console.log(`${options.variables[0]} ${options.success[0]}: ${x1.length}, mean('${options.variables[1]}') = ${x1mean.toFixed(2)}`);
 
   // Compute values related to the null hypothesis
-  const estimate = x1mean - x0mean;
-  const s0 = standardDeviation(x0response);
-  const s1 = standardDeviation(x1response);
-  const se = Math.sqrt(s0 * s0 / x0.length + s1 * s1 / x1.length);
+  const estimate = x2mean - x1mean;
+  const s0 = standardDeviation(x1response);
+  const s1 = standardDeviation(x2response);
+  const se = Math.sqrt(s0 * s0 / x1.length + s1 * s1 / x2.length);
   const t = zScore(estimate, 0, se); 
-  const df = Math.min(x0.length, x1.length) - 1;
+  const df = Math.min(x1.length, x2.length) - 1;
   const cdf = ProbabilityFunctions.TCDF(df);
   const p_value = 2 * cdf(-Math.abs(t));  // two-tailed
   const direction = "two-tailed";
@@ -1824,8 +1867,8 @@ Inference.DifferenceInMeans = function(sample, options) {
 
   return {
     ...options,
-    x0mean,
     x1mean,
+    x2mean,
     estimate,
     se,
     t,
@@ -1835,8 +1878,8 @@ Inference.DifferenceInMeans = function(sample, options) {
     ci_lower_bound,
     ci_upper_bound,
     descriptions: {
-      x0mean: `The computed mean of the RESPONSE variable '${options.variables[1]}' for the EXPLANATORY variable '${options.variables[0]}' != '${options.success[0]}' is: ` + x0mean.toFixed(3),
-      x1mean: `The computed mean of the RESPONSE variable '${options.variables[1]}' for the EXPLANATORY variable '${options.variables[0]}' = '${options.success[0]}' is: ` + x1mean.toFixed(3),
+      x1mean: `The mean of (${options.variables[1]}) for (${options.variables[0]} != ${options.success[0]}) is x̄= ` + x1mean.toFixed(3),
+      x2mean: `The mean of (${options.variables[1]}) for (${options.variables[0]} == ${options.success[0]}) is x̄= ` + x2mean.toFixed(3),
       estimate: 'The estimated difference in means is: ' + estimate.toFixed(3),
       se: 'The estimated standard error in this sample is: ' + se.toFixed(3),
       t: 'The standardized test statistic `t` for the difference in means is: ' + t.toFixed(3) + ', which means the difference in means is ' + t.toFixed(3) + ' Standard Errors away from the null, which is considered ' + (Math.abs(t) < 2 ? 'non-significant' : Math.abs(t) < 3 ? 'UNUSUAL' : 'VERY UNUSUAL'),

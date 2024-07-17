@@ -240,7 +240,7 @@ inf = stats.Inference.DifferenceInMeans(penguins_data, {
     confidence: 0.95,
 });
 print("JLX:".yellow);
-// print(inf);
+print(inf);
 for (let key in inf.descriptions) {
     print(inf.descriptions[key].yellow);
 }
