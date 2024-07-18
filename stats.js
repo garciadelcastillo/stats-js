@@ -540,7 +540,11 @@ function fValue(data, opts) {
 
 
 /**
- * 
+ * Computes the chi-squared statistic χ² for a given dataset and options.
+ * This is a measure of the association between two categorical variables.
+ * The formula is χ² = Σ((O - E)² / E), where O is the observed count for 
+ * a particular combination of values, and E is the expected count under the
+ * null hypothesis of independence.
  * @param {*} data An array of objects with key-value pairs.
  * @param {*} opts An options object with the following keys:
  * - explanatory: The key of the explanatory variable
@@ -563,8 +567,10 @@ function chiSquared(data, opts) {
   const observedCounts = countByValueCombination(data, [responseKey, explanatoryKey]);
   // print(observedCounts);
 
-  // Now, compute the expected counts for each combination by multiplying the
-  // total count of each explanatory value by the total count of each response value
+  // Now, compute the expected counts for each combination.
+  // This is basically creating the null hypothesis of independence, 
+  // by distributing the counts of each variable proportionally.
+
   // const expectedCounts = {};
   // const z_scores = {};
   let chiSquared = 0;
@@ -635,12 +641,13 @@ const F = fValue;
 
 
 /**
- * Creates a data frame from an array of keys and an array of arrays of values.
+ * Creates an array of objects from an array of keys and an array of
+ * arrays of corresponding values.
  * @param {*} keys An array of keys, e.g. ['Genre', 'Rating']
  * @param {*} values An array of arrays, e.g. [['Action', 'Comedy'], [4.5, 3.5]]
  * @returns An array of objects, e.g. [{Genre: 'Action', Rating: 4.5}, {Genre: 'Comedy', Rating: 3.5}]
  */
-function createDataFrame(keys, values) {
+function createObjectArray(keys, values) {
   // Co-pilot generated
   return values[0].map((_, i) => Object.fromEntries(keys.map((k, j) => [k, values[j][i]])));
 }
@@ -1321,7 +1328,7 @@ function nullDistributionANOVA(data, reps, opts) {
 
     // Reassemble the permuted data into a frame, 
     // so that it can be consumed by the fValue function
-    const frame = createDataFrame(
+    const frame = createObjectArray(
       [opts.variable, opts.category],
       permuted
     );
@@ -1334,7 +1341,30 @@ function nullDistributionANOVA(data, reps, opts) {
 }
 
 
+function nullDistributionChiSquared(data, reps, opts) {
+  // Generate two arrays with the values of the categorical 
+  // explanatory and response variables
+  const exp = data.map(d => d[opts.explanatory]);
+  const res = data.map(d => d[opts.response]);
 
+  const chis = Array.from({ length: reps }, (_, i) => {
+    // Randomly permute the samples to de-correlate them
+    // i.e. making their values independent of each other
+    const permuted = _permuteSamples([res, exp]);
+
+    // Reassemble the permuted data into a frame, 
+    // so that it can be consumed by the chiSquared function
+    const frame = createObjectArray(
+      [opts.response, opts.explanatory],
+      permuted
+    );
+
+    const chi = chiSquared(frame, opts);
+    return chi;
+  });
+
+  return chis;
+}
 
 
 
@@ -2529,7 +2559,7 @@ module.exports = {
   MSE,
   F,
 
-  createDataFrame,
+  createObjectArray,
 
   covariance,
   correlation,
@@ -2549,6 +2579,7 @@ module.exports = {
   nullDistribution,
   nullDistributionMulti,
   nullDistributionANOVA,
+  nullDistributionChiSquared,
 
   pValue,
   power,
