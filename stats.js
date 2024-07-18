@@ -716,8 +716,8 @@ function correlation(x, y) {
  * - `b` is the **y-intercept** of the line
  * - `x` is the **independent/explanatory** variable
  * - `y` is the **dependent/response** variable
- * @param {*} x 
- * @param {*} y 
+ * @param {*} x The independent/explanatory variable
+ * @param {*} y The dependent/response variable
  * @returns 
  */
 function leastSquaresRegression(x, y) {
@@ -1987,6 +1987,8 @@ class SampleSize {};
  * - success: The value of the success in the sample.
  * - null: The null hypothesis value for the proportion.
  * - confidence: The confidence level for the confidence interval.
+ * - direction: The direction of the p-test and confidence interval: 
+ *     "two-tailed", "greater", or "less".
  * @returns 
  */
 Inference.Proportion = function (sample, options) {
@@ -2004,15 +2006,40 @@ Inference.Proportion = function (sample, options) {
   const se = Math.sqrt(options.null * (1 - options.null) / sample.length);
   const z = zScore(p, options.null, se);
   const cdf = ProbabilityFunctions.StandardNormalCDF();
-  const p_value = 1 - cdf(z);  // greater
-  const direction = "greater";
+  const direction = options.direction || "two-tailed";
+  let p_value;
+  if (direction === "two-tailed")
+    p_value = 2 * (1 - cdf(Math.abs(z)));  // two-tailed
+  else if (direction === "less")
+    p_value = cdf(z);  // less
+  else if (direction === "greater")
+    p_value = 1 - cdf(z);  // greater
+    
+
 
   // Compute the confidence interval for the population proportion
   // (unrelated to the null hypothesis, but based on the sample proportion)
   const icdf = ProbabilityFunctions.NormalInvCDF(0, 1);
-  const ci = icdf(options.confidence + 0.5 * (1 - options.confidence));
-  const ci_lower_bound = p - ci * se;
-  const ci_upper_bound = p + ci * se;
+  let ci, ci_lower_bound, ci_upper_bound;
+  if (direction === "two-tailed") {
+    ci = icdf(options.confidence + 0.5 * (1 - options.confidence));
+    ci_lower_bound = p - ci * se;
+    ci_upper_bound = p + ci * se;
+  } else if (direction === "less") {
+    ci = icdf(options.confidence);
+    ci_lower_bound = -Infinity;
+    ci_upper_bound = p + ci * se;
+  } else if (direction === "greater") {
+    ci = icdf(options.confidence);
+    ci_lower_bound = p - ci * se;
+    ci_upper_bound = Infinity;
+  }
+
+
+
+  // const ci = icdf(options.confidence + 0.5 * (1 - options.confidence));
+  // const ci_lower_bound = p - ci * se;
+  // const ci_upper_bound = p + ci * se;
 
   return {
     ...options,
@@ -2024,7 +2051,7 @@ Inference.Proportion = function (sample, options) {
     ci_lower_bound,
     ci_upper_bound,
     descriptions: {
-      p: 'The computed proportion p̂ of successes`' + options.success + '` in this sample: ' + p.toFixed(3),
+      p: `'The computed proportion p̂ of successes '${options.success}' in this sample: ${p.toFixed(3)}`,
       se: 'Assuming the null hypothesis is true, the estimated standard error in this sample is: ' + se.toFixed(3),
       z: 'Assuming the null hypothesis is true, the z-score for p̂ in this sample is: ' + z.toFixed(3) + ', which means p̂ is ' + z.toFixed(3) + ' Standard Errors away from the null, which is considered ' + (Math.abs(z) < 2 ? 'non-significant' : Math.abs(z) < 3 ? 'UNUSUAL' : 'VERY UNUSUAL'),
       p_value: 'Assuming the null hypothesis is true, the p-value of p̂ in this sample is: ' + p_value.toFixed(3) + ', which is considered ' + (p_value > 0.05 ? 'non-significant' : p_value > 0.01 ? 'UNUSUAL' : 'VERY UNUSUAL'),
@@ -2490,7 +2517,7 @@ Inference.Correlation = function(sample, options) {
 
 
 /**
- * Computes a theory-based ANOVA test on the sample. 
+ * Computes a theory-based One-Way ANOVA test on the sample. 
  * This test is used to compare the means of two or more groups.
  * @param {*} sample A data frame with the two variables of interest.
  * @param {*} options An object with the following properties:
@@ -2498,11 +2525,13 @@ Inference.Correlation = function(sample, options) {
  * - category: The name of the category variable, e.g. "Genre"
  * - groups: An array with the group names, e.g. ["Action", "Comedy", "Drama"]. 
  *   If not provided, the unique values of the category variable will be used.
+ * - alpha: The significance level for the test (default = 0.05)
  * @returns 
  */
 Inference.ANOVA = function(sample, options) {
   // Use optional group names or use unique values of the category variable
   const groupValues = options.groups || unique(sample.map(d => d[options.category]));
+  const alpha = options.alpha || 0.05;
 
   // Extract the groups per category
   const groups = groupValues.map(group => sample.filter(d => d[options.category] == group));
@@ -2519,7 +2548,7 @@ Inference.ANOVA = function(sample, options) {
   const df1 = groups.length - 1;
   const df2 = n - groups.length;
   const cdf = ProbabilityFunctions.FCDF(df1, df2);
-  const direction = options.direction || "greater";
+  const direction = "greater";
   let p_value = 0;
   // NO DIRECTIONS, doesn't make a lot of sense fir ANOVA (right-skewed distribution)
   // if (direction == "greater")
@@ -2559,11 +2588,12 @@ Inference.ANOVA = function(sample, options) {
     df2,
     direction,
     p_value,
+    alpha,
     // ci_lower_bound,
     // ci_upper_bound,
     descriptions: {
       test_statistic: 'The computed F coefficient for the ANOVA test is: ' + test_statistic.toFixed(3),
-      p_value: `The p-value of the F coefficient is: ${p_value.toFixed(3)}, which is considered ${p_value > 0.05 ? 'non-significant' : p_value > 0.01 ? 'UNUSUAL' : 'VERY UNUSUAL'}. This means that, given this sample, we are ${p_value > 0.05 ? 'NOT CONFIDENT' : p_value > 0.01 ? 'MODERATELY CONFIDENT' : 'VERY CONFIDENT'} that the null hypothesis of the means of categories ${JSON.stringify(groupValues)} in explanatory variable "${options.category}" is false.`,
+      p_value: `The p-value of the F coefficient is: ${p_value.toFixed(3)}, which is considered ${p_value > alpha ? 'non-significant' : p_value > 0.01 ? 'UNUSUAL' : 'VERY UNUSUAL'}. This means that, given this sample, we are ${p_value > alpha ? 'NOT CONFIDENT' : p_value > 0.01 ? 'MODERATELY CONFIDENT' : 'VERY CONFIDENT'} that we can reject the null hypothesis of all the means of categories ${JSON.stringify(groupValues)} in the explanatory variable "${options.category}" being equal. Or in other words, the variables "${options.variable}" and "${options.category}" are ${p_value > alpha ? 'INDEPENDENT' : 'DEPENDENT'}.`,
       // ci: 'The ' + opts.confidence * 100 + '% confidence interval for the F coefficient is: [' + ci_lower_bound.toFixed(3) + ', ' + ci_upper_bound.toFixed(3) + ']. This means that, given this sample, we are ' + opts.confidence * 100 + '% confident that the true F coefficient is within this interval.',
     }
   }
@@ -2586,7 +2616,7 @@ Inference.ChiSquared = function(sample, options) {
   // Count each combination of categories
   const counts = countByValueCombination(sample, [options.response, options.explanatory]);
   print(counts);
-  
+
   // Check if there are at least 5 samples in each category
   const min_samples = Math.min(...Object.values(counts).map(d => Math.min(...Object.values(d))));
   if (min_samples < 5)
