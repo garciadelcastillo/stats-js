@@ -311,6 +311,37 @@ F = stats.fValue(movies, {
   category: 'Genre'
 });
 print(`F: ${F} !!!! 💪`.red);
+print();
 
 
+print(`We can compute the p-value by bootstrapping:`)
 
+let null_dist = stats.nullDistributionANOVA(movies, 10000, {
+  variable: 'AudienceScore',
+  category: 'Genre'
+});
+plotHistogram(null_dist, {
+  title: 'Null distribution of F values',
+  color: 'marine',
+  binStart: 0,
+  binEnd: 5,
+  binWidth: .1,
+  decimals: 0,
+});
+
+let p_value = stats.pValue(null_dist, F, "greater");
+print(`P-value: ${p_value}`.red);
+print();
+print();
+
+print(`Or we can compute the p-value by approximating the null distribution with an f-distribution:`);
+
+let inf = stats.Inference.ANOVA(movies, {
+  variable: 'AudienceScore',
+  category: 'Genre',
+  confidence: 0.95,
+  // direction: 'greater',  // default 
+
+});
+print(inf);
+print(`Yaaay! Looks like I get the same results as in slide 33! 🎉`.red);

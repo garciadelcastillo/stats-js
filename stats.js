@@ -43,12 +43,20 @@ function extremes(array) {
  * @returns 
  */
 function unique(array) {
+  // Manual way
   let unique = [];
   for (let i = 0; i < array.length; i++) {
     if (unique.indexOf(array[i]) == -1) {
       unique.push(array[i]);
     }
   }
+
+  // // Modern JS way
+  // let unique = [...new Set(array)];
+  
+  // A quick comparison of the two methods showed that the
+  // manual way is faster.
+  
   return unique;
 }
 
@@ -346,7 +354,6 @@ function factorial(n) {
 function sumOfSquaresTotal(array) {
   // SST = Σ(xi - x̄)²
   const avg = mean(array);
-  print(avg);
   const sst = array.reduce((acc, xi) => acc + Math.pow(xi - avg, 2), 0);
   return sst;
 }
@@ -463,7 +470,6 @@ function meanSquareError(data, opts) {
 function fValue(data, opts) {
   const msg = meanSquareGroup(data, opts);
   const mse = meanSquareError(data, opts);
-  print(msg, mse)
   return msg / mse;
 };
 
@@ -502,6 +508,26 @@ const F = fValue;
 
 
 
+
+// ██████╗  █████╗ ████████╗ █████╗ 
+// ██╔══██╗██╔══██╗╚══██╔══╝██╔══██╗
+// ██║  ██║███████║   ██║   ███████║
+// ██║  ██║██╔══██║   ██║   ██╔══██║
+// ██████╔╝██║  ██║   ██║   ██║  ██║
+// ╚═════╝ ╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝
+//                                  
+
+
+/**
+ * Creates a data frame from an array of keys and an array of arrays of values.
+ * @param {*} keys An array of keys, e.g. ['Genre', 'Rating']
+ * @param {*} values An array of arrays, e.g. [['Action', 'Comedy'], [4.5, 3.5]]
+ * @returns An array of objects, e.g. [{Genre: 'Action', Rating: 4.5}, {Genre: 'Comedy', Rating: 3.5}]
+ */
+function createDataFrame(keys, values) {
+  // Co-pilot generated
+  return values[0].map((_, i) => Object.fromEntries(keys.map((k, j) => [k, values[j][i]])));
+}
 
 
 
@@ -1036,7 +1062,7 @@ function _nullDistributionProportion(sample, reps, opts) {
  * {
     null: "independence",
     statistic: "diff in means" | "diff in ratios" "diff in proportions" | "correlation"
-    types: ["numerical", "categorical"] or ["numerical", "numerical"]  // in [res, exp] order
+    types: ["numerical", "categorical"] or ["numerical", "numerical"] --> in [res, exp] order
     order: (unique values of the cat variable in [0] - [1] order),
     }
  * @returns 
@@ -1079,7 +1105,7 @@ function _nullDistributionPermutationDiffMeans(samples, reps, opts) {
   const diffs = Array.from({
     length: reps
   }, () => {
-    // Randomly permute the samples to de-corrlate them
+    // Randomly permute the samples to de-correlate them
     // i.e. making their values independent of each other
     const permuted = _permuteSamples(samples);
 
@@ -1111,7 +1137,7 @@ function _nullDistributionPermutationDiffProportions(samples, reps, opts) {
   const diffs = Array.from({
     length: reps
   }, () => {
-    // Randomly permute the samples to de-corrlate them
+    // Randomly permute the samples to de-correlate them
     // i.e. making their values independent of each other
     const permuted = _permuteSamples(samples);
 
@@ -1149,7 +1175,47 @@ function _nullDistributionPermutationCorrelation(samples, reps, opts) {
 }
 
 
+/**
+ * Computes the null distribution for an ANOVA test using, permuting
+ * the values of the response variable (null hypothesis = independence), 
+ * and returning the F-statistic for each permutation.
+ * @param {*} data An array of data objects with key-value pairs. 
+ * @param {*} reps 
+ * @param {*} opts An object with the following properties:
+ * - category: the key of the categorical variable
+ * - variable: the key of the numerical variable
+ * - groups: An array of group names to use. If not provided, 
+ * the unique values of the category variable will be used.
+ * @returns 
+ */
+function nullDistributionANOVA(data, reps, opts) {
+  // Use optional group names or use unique values of the category variable
+  const groupValues = opts.groups || unique(data.map(d => d[opts.category]));
+  
+  // Generate two arrays with the values of the response quant and 
+  // the explanatory categorical variables.
+  const filteredData = data.filter(d => groupValues.includes(d[opts.category]));
+  const exp = filteredData.map(group => group[opts.category]);
+  const res = filteredData.map(group => group[opts.variable]);
 
+  const Fs = Array.from({ length: reps }, (_, i) => {
+    // Randomly permute the samples to de-correlate them
+    // i.e. making their values independent of each other
+    const permuted = _permuteSamples([res, exp]);
+
+    // Reassemble the permuted data into a frame, 
+    // so that it can be consumed by the fValue function
+    const frame = createDataFrame(
+      [opts.variable, opts.category],
+      permuted
+    );
+
+    const F = fValue(frame, opts);
+    return F;
+  });
+
+  return Fs;
+}
 
 
 
@@ -1590,6 +1656,72 @@ ProbabilityFunctions.TInvCDF = function(df) {
 
   return icdf;
 }
+
+/**
+ * Returns the probability density function for an F-distribution with the given
+ * degrees of freedom df1 and df2. The F-distribution is the ratio of two chi-squared
+ * distributions (?), and is used in ANOVA tests and other statistical analyses.
+ * @param {*} df1 Degrees of freedom of the first distribution
+ * @param {*} df2 Degrees of freedom of the second distribution
+ * @returns 
+ */
+ProbabilityFunctions.F = function (df1, df2) {
+  // Compute the probability density function for an F-distribution.
+  // I am kind of tired of researching these distributions and their manual implementations.
+  // So, I'm using a library for this one.
+
+  function pdf(x) {
+    // https://jstat.github.io/distributions.html#jStat.centralF
+    return jStat.centralF.pdf(x, df1, df2);
+  }
+
+  return pdf;
+}
+
+/**
+ * Returns the cumulative distribution function (CDF) for an F-distribution with the given
+ * degrees of freedom df1 and df2. The CDF gives the probability that a random variable X 
+ * will take a value LESS THAN OR EQUAL to x.
+ * @param {*} df1 Degrees of freedom of the first distribution
+ * @param {*} df2 Degrees of freedom of the second distribution
+ * @returns
+ */
+ProbabilityFunctions.FCDF = function (df1, df2) {
+  // Compute the cumulative distribution function for an F-distribution.
+
+  function cdf(x) {
+    // https://jstat.github.io/distributions.html#jStat.centralF
+    return jStat.centralF.cdf(x, df1, df2);
+  }
+  
+  return cdf;
+}
+
+/**
+ * Returns the inverse cumulative distribution function (CDF) for an F-distribution
+ * with the given degrees of freedom df1 and df2. The inverse CDF gives the value x such that
+ * the probability that a random variable X will take a value LESS THAN OR EQUAL to x is p.
+ * In other words, for a probability p, this function will return the value x
+ * such that P(X ≤ x) = p.
+ * @param {*} df1 Degrees of freedom of the first distribution
+ * @param {*} df2 Degrees of freedom of the second distribution
+ * @returns 
+ */
+ProbabilityFunctions.FInvCDF = function (df1, df2) {
+  // Compute the inverse cumulative distribution function for an F-distribution.
+
+  function icdf(p) {
+    // https://jstat.github.io/distributions.html#jStat.centralF
+    return jStat.centralF.inv(p, df1, df2);
+  }
+
+  return icdf;
+}
+
+
+
+
+
 
 
 
@@ -2081,7 +2213,7 @@ Inference.DifferenceInMeans = function(sample, options) {
 
 
 /**
- * 
+ * Computes the theory-based inference for Correlation.
  * @param {*} sample A data frame with the two variables of interest.
  * @param {*} options An object with the following properties:
  * - variables: An array with the two variables of interest, e.g. ["Age", "HoursWk"]
@@ -2153,7 +2285,86 @@ Inference.Correlation = function(sample, options) {
 }
 
 
+/**
+ * 
+ * @param {*} sample A data frame with the two variables of interest.
+ * @param {*} options An object with the following properties:
+ * - variable: The name of the quantitative variable of interest, e.g. "AudienceScore"
+ * - category: The name of the category variable, e.g. "Genre"
+ * - groups: An array with the group names, e.g. ["Action", "Comedy", "Drama"]. 
+ *   If not provided, the unique values of the category variable will be used.
+//  * - confidence: The confidence level for the confidence interval, e.g. 0.95
+//  * - direction: The direction of the
+ * @returns 
+ */
+Inference.ANOVA = function(sample, options) {
+  // Use optional group names or use unique values of the category variable
+  const groupValues = options.groups || unique(sample.map(d => d[options.category]));
 
+  // Extract the groups per category
+  const groups = groupValues.map(group => sample.filter(d => d[options.category] == group));
+
+  // Checks
+  groups.forEach((group, i) => {
+    if (group.length < 30)
+      console.log(`Warning: at least 30 samples in '${groupValues[i]}' are recommended for a good approximation.`);
+  });
+
+  // Compute the F coefficient
+  const test_statistic = fValue(sample, options);
+  const n = groups.reduce((acc, group) => acc + group.length, 0);
+  const df1 = groups.length - 1;
+  const df2 = n - groups.length;
+  const cdf = ProbabilityFunctions.FCDF(df1, df2);
+  const direction = options.direction || "greater";
+  let p_value = 0;
+  // NO DIRECTIONS, doesn't make a lot of sense fir ANOVA (right-skewed distribution)
+  // if (direction == "greater")
+    p_value = 1 - cdf(test_statistic);
+  // else if (direction == "less")
+  //   p_value = cdf(test_statistic);
+  // else if (direction == "two-tailed")
+  //   p_value = 2 * (1 - cdf(test_statistic));
+
+
+
+  // I don't know if computing this without a SE makes sense...
+  // // Compute the confidence interval for the F coefficient
+  // const icdf = ProbabilityFunctions.FInvCDF(df1, df2);
+  // let ci, ci_lower_bound, ci_upper_bound;
+  // if (direction == "two-tailed") {
+  //   ci = icdf(opts.confidence + 0.5 * (1 - opts.confidence));
+  //   ci_lower_bound = test_statistic - ci;
+  //   ci_upper_bound = test_statistic + ci;
+  // }
+  // else if (direction == "greater") {
+  //   ci = icdf(opts.confidence);
+  //   ci_lower_bound = test_statistic;
+  //   ci_upper_bound = Infinity;
+  // }
+  // else if (direction == "less") {
+  //   ci = icdf(opts.confidence);
+  //   ci_lower_bound = 0;
+  //   ci_upper_bound = test_statistic;
+  // }
+
+  return {
+    ...options,
+    test_statistic,
+    n,
+    df1,
+    df2,
+    direction,
+    p_value,
+    // ci_lower_bound,
+    // ci_upper_bound,
+    descriptions: {
+      test_statistic: 'The computed F coefficient for the ANOVA test is: ' + test_statistic.toFixed(3),
+      p_value: 'The p-value of the F coefficient is: ' + p_value.toFixed(3) + ', which is considered ' + (p_value > 0.05 ? 'non-significant' : p_value > 0.01 ? 'UNUSUAL' : 'VERY UNUSUAL'),
+      // ci: 'The ' + opts.confidence * 100 + '% confidence interval for the F coefficient is: [' + ci_lower_bound.toFixed(3) + ', ' + ci_upper_bound.toFixed(3) + ']. This means that, given this sample, we are ' + opts.confidence * 100 + '% confident that the true F coefficient is within this interval.',
+    }
+  }
+}
 
 
 
@@ -2202,7 +2413,7 @@ module.exports = {
   MSE,
   F,
 
-
+  createDataFrame,
 
   covariance,
   correlation,
@@ -2221,6 +2432,8 @@ module.exports = {
   randomStandardNormalSamples,
   nullDistribution,
   nullDistributionMulti,
+  nullDistributionANOVA,
+
   pValue,
   power,
   zScore,
