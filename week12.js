@@ -141,13 +141,59 @@ print(`
 
 print(`
 
-## INFERENCE REGRESSION Week 12 4/15 + 4/17
+
+## INFERENCE REGRESSION Week 12 4/15
 
 She discusses how linear regression models can be built and analyzed. The assumptions discussion was particularly interesting. 
 
-She also discusses how to interpret "regression tables", a summary of a model that R gives you. This is useful to analyze which variables have an effect of inference. However, the math is not really explained, in particular I have a problem with the estimation of the SE in the tables/formulas. 
+She also discusses how to interprest 'regression tables', a summary of a model that R gives you. This is useful to analyze which variables have an effect of inference. However, the math is not really explained, in particular I have a problem with the estimation of the SE in the tables/formulas. 
 
 I don't feel like I can replicate them. Also, all of this will probably be quite extended in CS109a?
+
+## ANOVA Week 12 4/17
+
+ANOVA: Analysis of VARIANCE.
+
+Discussed the case of a QUANT RESPONSE VARIABLE, and a CATEGORICAL EXPLANATORY var which is NOT BINARY. 
+
+μ1 - μ2 makes no sense anymore, we have more than 2 stats, hence many more means. 
+
+Null hypothesis is now: (k = number of categories)
+H0: μ1 = μ2 = ... = μk      (explanatory and response variables are independent/not related: knowing whichexp  cat I am in does not tell me anything about my res variable)
+Ha: at least one mean is not equal to the rest.  (variables are dependent/related)
+
+What test statistic can we choose? Not a mean from the sample, but we will use _variability_. 
+
+For two scenarios with same means per category, we are more convinced by the scneraio where the responses have less variability (the values have a smaller range), because it indicates all responses are closer to the mean. 
+
+SSG, SSE, MSG, MSE
+
+F = MSG / MSE
+
+If H0 is true, then F should be close to 1.
+If Ha is true, F should be greater than 1. 
+
+F gives us a sense of how much larger the variability between groups is than the variability within groups. 
+
+To gauge F values, we need to construct a null distribution. We can do this two ways: 
+
+- Simulation: do this by shuffling/permuting the exp and res variables (is this considered bootstrapping?). Then the p-value is the area to the right of the observed test statistic.  
+- Approximation: 
+  - we assume:
+    - We have at least 30 observations per group, or the res var is normal (look at histograms).
+    - The variability is similar for all groups (standard deviation). 
+      - Rule of thumb for this: 2 * minSD > maxSD
+  - If the above is true, then the 'test_statistic ~ F(df1 = K - 1, df2 = n - K)'
+  - At any rate, the ANOVA test is quite resilient to the above, so we can be a bit flexible here... 
+
+Due to the square nature of the means, the dist will likely be right-skewed (right foot toes).
+
+WE could have done this with linear regression (?). The ANOVA test is a special case of this. 
+
+This was One-Way ANOVA (1 cat explanatory var)
+There is two-way (2 cat expl vars)
+There is Repeated Measures ANOVA: multiple observations on each case (this one is for multi measures on same subject).
+There is ANOVA for regression: allow comparisons of various subsets of multiple linear regression models. 
 `.yellow);
 
 print(`
