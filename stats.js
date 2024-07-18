@@ -2286,15 +2286,13 @@ Inference.Correlation = function(sample, options) {
 
 
 /**
- * 
+ * Computes a theory-based ANOVA test on the sample. 
  * @param {*} sample A data frame with the two variables of interest.
  * @param {*} options An object with the following properties:
  * - variable: The name of the quantitative variable of interest, e.g. "AudienceScore"
  * - category: The name of the category variable, e.g. "Genre"
  * - groups: An array with the group names, e.g. ["Action", "Comedy", "Drama"]. 
  *   If not provided, the unique values of the category variable will be used.
-//  * - confidence: The confidence level for the confidence interval, e.g. 0.95
-//  * - direction: The direction of the
  * @returns 
  */
 Inference.ANOVA = function(sample, options) {
