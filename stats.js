@@ -61,6 +61,69 @@ function unique(array) {
 }
 
 
+/**
+ * A function that given an array of objects, and an array of keys for those objects,
+ * returns the count of objects for each combination of keys.
+ * For example, given the following data:
+ *   `data = [{'foo': 'a', 'bar': 'x'}, {'foo': 'a', 'bar': 'y'}, {'foo': 'b', 'bar': 'x'}]`
+ *   `keys = ['foo', 'bar']`
+ * The function will return:
+ *   `{'a': {'x': 1, 'y': 1}, 'b': {'x': 1, 'y': 0}}`
+ * Another example, given the following data:
+ *   `data = [{'foo': 'a'}, {'foo': 'a'}, {'foo': 'b'}]`
+ *   `keys = ['foo']`
+ * The function will return:
+ *   `{'a': 2, 'b': 1}`
+ * The function will nest the counts for all possible combinations of keys,
+ * and add zeros for missing combinations.
+ * @param {*} data An array of objects
+ * @param {*} keys The keys to use for combination counting
+ * @returns 
+ */
+function countByValueCombination(data, keys) {
+  let uniquevalues = [];
+  for (let i = 0; i < keys.length; i++) {
+    uniquevalues.push(unique(data.map(x => x[keys[i]])).toSorted());
+  }
+
+  // Initialize the counts object with all the nested keys
+  // and set all values to zero.
+  let counts = {};
+  function initialize(ref, keys, i) {
+    if (i == keys.length - 1) {
+      for (let j = 0; j < keys[i].length; j++) {
+        ref[keys[i][j]] = 0;
+      }
+    } else {
+      for (let j = 0; j < keys[i].length; j++) {
+        ref[keys[i][j]] = {};
+        initialize(ref[keys[i][j]], keys, i + 1);
+      }
+    }
+  }
+  initialize(counts, uniquevalues, 0);
+
+  // Iterate over all the objects in the data array
+  // and increment the counts for each combination of keys.
+  for (let i = 0; i < data.length; i++) {
+    let obj = data[i];
+    let ref = counts;
+    for (let j = 0; j < keys.length; j++) {
+      let key = keys[j];
+      let value = obj[key];
+      if (j == keys.length - 1) {
+        ref[value]++;
+      } else {
+        ref = ref[value];
+      }
+    }
+  }
+
+  return counts;
+}
+
+
+
 
 
 /**
@@ -216,16 +279,16 @@ function standardDeviationDistribution(P) {
 }
 
 
-/**
- * Returns a list of unique elements in an array.
- * @param {*} array 
- * @returns 
- */
-function unique(array) {
-  // https://stackoverflow.com/questions/1960473/get-all-unique-values-in-a-javascript-array-remove-duplicates
-  // If the index of the element is not itself, it must be a duplicate
-  return array.filter((value, index, self) => self.indexOf(value) === index);
-}
+// /**
+//  * Returns a list of unique elements in an array.
+//  * @param {*} array 
+//  * @returns 
+//  */
+// function unique(array) {
+//   // https://stackoverflow.com/questions/1960473/get-all-unique-values-in-a-javascript-array-remove-duplicates
+//   // If the index of the element is not itself, it must be a duplicate
+//   return array.filter((value, index, self) => self.indexOf(value) === index);
+// }
 
 
 /**
@@ -472,6 +535,59 @@ function fValue(data, opts) {
   const mse = meanSquareError(data, opts);
   return msg / mse;
 };
+
+
+
+
+/**
+ * 
+ * @param {*} data An array of objects with key-value pairs.
+ * @param {*} opts An options object with the following keys:
+ * - explanatory: The key of the explanatory variable
+ * - response: The key of the response variable
+ * @returns 
+ */
+function chiSquared(data, opts) {
+  const explanatoryKey = opts.explanatory;
+  const responseKey = opts.response;
+
+  // Checks
+  if (!explanatoryKey || !responseKey) {
+    throw new Error('Both explanatory and response keys are required');
+  }
+  
+  // Get the count of each unique value of the variables
+  const n = data.length;
+  const responseCounts = countByValueCombination(data, [responseKey]);
+  const explanatoryCounts = countByValueCombination(data, [explanatoryKey]);
+  const observedCounts = countByValueCombination(data, [responseKey, explanatoryKey]);
+  // print(observedCounts);
+
+  // Now, compute the expected counts for each combination by multiplying the
+  // total count of each explanatory value by the total count of each response value
+  // const expectedCounts = {};
+  // const z_scores = {};
+  let chiSquared = 0;
+  for (let resKey in responseCounts) {
+    // expectedCounts[resKey] = {};
+    // z_scores[resKey] = {};
+    for (let expKey in explanatoryCounts) {
+      const expected = responseCounts[resKey] * explanatoryCounts[expKey] / n;
+      const observed = observedCounts[resKey][expKey] || 0;
+      const z = (observed - expected) / Math.sqrt(expected);
+      chiSquared += z * z;
+      
+      // expectedCounts[resKey][expKey] = expected;
+      // z_scores[resKey][expKey] = z;
+    }
+  }
+  // print(expectedCounts);
+  // print(z_scores);
+
+  return chiSquared;
+}
+
+
 
 
 
@@ -2383,6 +2499,7 @@ module.exports = {
   SQRT_TAU,
   extremes,
   unique,
+  countByValueCombination,
   sum,
   mean,
   meanDistribution,
@@ -2393,7 +2510,7 @@ module.exports = {
   varianceDistribution,
   standardDeviation,
   standardDeviationDistribution,
-  unique,
+  // unique,
   ratio,
   quantile,
   histogram,
@@ -2404,6 +2521,7 @@ module.exports = {
   meanSquareGroup,
   meanSquareError,
   fValue,
+  chiSquared,
   SST,
   SSG,
   SSE,
