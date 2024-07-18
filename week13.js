@@ -235,3 +235,7 @@ inf = stats.Inference.ChiSquared(penguins, {
 });
 print(inf);
 print(`As we can see, the p-value is so high, that we FAIL TO REJECT the null hypothesis that there is no association between the species of the penguins and their sex`.red);
+print();
+print();
+
+print('Was going to do the oxford comma, but the cleanup is too much work. Maybe later!')
