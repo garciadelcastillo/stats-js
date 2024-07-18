@@ -1864,6 +1864,64 @@ ProbabilityFunctions.FInvCDF = function (df1, df2) {
   return icdf;
 }
 
+/**
+ * Returns the probability density function for a chi-squared distribution 
+ * with the given degrees of freedom df. The chi-squared distribution is the
+ * sum of the squares of df independent standard normal random variables.
+ * @param {*} df 
+ * @returns 
+ */
+ProbabilityFunctions.ChiSq = function (df) {
+  // Compute the probability density function for a chi-squared distribution.
+
+  function pdf(x) {
+    // https://jstat.github.io/distributions.html#jStat.chisquare
+    return jStat.chisquare.pdf(x, df);
+  }
+
+  return pdf;
+}
+
+/**
+ * Returns the cumulative distribution function (CDF) for a chi-squared distribution
+ * with the given degrees of freedom df. The CDF gives the probability that a random
+ * variable X will take a value LESS THAN OR EQUAL to x.
+ * @param {*} df 
+ * @returns 
+ */
+ProbabilityFunctions.ChiSqCDF = function (df) {
+  // Compute the cumulative distribution function for a chi-squared distribution.
+
+  function cdf(x) {
+    // https://jstat.github.io/distributions.html#jStat.chisquare
+    return jStat.chisquare.cdf(x, df);
+  }
+
+  return cdf;
+}
+
+/**
+ * Returns the inverse cumulative distribution function (CDF) for a chi-squared
+ * distribution. The inverse CDF gives the value x such that the probability that
+ * a random variable X will take a value LESS THAN OR EQUAL to x is p.
+ * In other words, for a probability p, this function will return the value x
+ * such that P(X ≤ x) = p.
+ * @param {*} df 
+ * @returns 
+ */
+ProbabilityFunctions.ChiSqInvCDF = function (df) {
+  // Compute the inverse cumulative distribution function for a chi-squared distribution.
+
+  function icdf(p) {
+    // https://jstat.github.io/distributions.html#jStat.chisquare
+    return jStat.chisquare.inv(p, df);
+  }
+
+  return icdf;
+}
+
+
+
 
 
 
@@ -2433,6 +2491,7 @@ Inference.Correlation = function(sample, options) {
 
 /**
  * Computes a theory-based ANOVA test on the sample. 
+ * This test is used to compare the means of two or more groups.
  * @param {*} sample A data frame with the two variables of interest.
  * @param {*} options An object with the following properties:
  * - variable: The name of the quantitative variable of interest, e.g. "AudienceScore"
@@ -2504,11 +2563,73 @@ Inference.ANOVA = function(sample, options) {
     // ci_upper_bound,
     descriptions: {
       test_statistic: 'The computed F coefficient for the ANOVA test is: ' + test_statistic.toFixed(3),
-      p_value: 'The p-value of the F coefficient is: ' + p_value.toFixed(3) + ', which is considered ' + (p_value > 0.05 ? 'non-significant' : p_value > 0.01 ? 'UNUSUAL' : 'VERY UNUSUAL'),
+      p_value: `The p-value of the F coefficient is: ${p_value.toFixed(3)}, which is considered ${p_value > 0.05 ? 'non-significant' : p_value > 0.01 ? 'UNUSUAL' : 'VERY UNUSUAL'}. This means that, given this sample, we are ${p_value > 0.05 ? 'NOT CONFIDENT' : p_value > 0.01 ? 'MODERATELY CONFIDENT' : 'VERY CONFIDENT'} that the null hypothesis of the means of categories ${JSON.stringify(groupValues)} in explanatory variable "${options.category}" is false.`,
       // ci: 'The ' + opts.confidence * 100 + '% confidence interval for the F coefficient is: [' + ci_lower_bound.toFixed(3) + ', ' + ci_upper_bound.toFixed(3) + ']. This means that, given this sample, we are ' + opts.confidence * 100 + '% confident that the true F coefficient is within this interval.',
     }
   }
 }
+
+
+/**
+ * Computes a theory-based Chi-Squared test on the sample.
+ * This test is used to determine whether there is a significant association 
+ * between two categorical variables.
+ * @param {*} sample A data frame with the two variables of interest.
+ * @param {*} options An object with the following properties:
+ * - explanatory: The name of the explanatory variable, e.g. "Lighting"
+ * - response: The name of the response variable, e.g. "Eye"
+ * @returns 
+ */
+Inference.ChiSquared = function(sample, options) {
+  const alpha = options.alpha || 0.05;
+
+  // Count each combination of categories
+  const counts = countByValueCombination(sample, [options.response, options.explanatory]);
+  print(counts);
+  
+  // Check if there are at least 5 samples in each category
+  const min_samples = Math.min(...Object.values(counts).map(d => Math.min(...Object.values(d))));
+  if (min_samples < 5)
+    console.log(`Warning: at least 5 samples in each category are recommended for a good approximation.`);
+
+
+  // Compute the χ² coefficient 
+  const test_statistic = chiSquared(sample, options);
+
+  // Compute the p-value
+  const k = unique(sample.map(d => d[options.explanatory])).length;
+  const j = unique(sample.map(d => d[options.response])).length;
+  const df = (k - 1) * (j - 1);
+  const cdf = ProbabilityFunctions.ChiSqCDF(df);
+  const direction = "greater";
+  const p_value = 1 - cdf(test_statistic);
+
+  return {
+    ...options,
+    alpha,
+    test_statistic,
+    k, j, df, direction, p_value,
+    descriptions: {
+      test_statistic: 'The computed χ² coefficient for the Chi-Squared test is: ' + test_statistic.toFixed(3),
+      p_value: `The p-value of the χ² coefficient is: ${p_value.toFixed(3)}, which is considered ${p_value > alpha ? 'non-significant' : p_value > 0.01 ? 'UNUSUAL' : 'VERY UNUSUAL'}. This means that the null hypothesis of independence between the two variables '${options.explanatory}' and '${options.response}' is ${p_value > alpha ? 'NOT REJECTED' : 'REJECTED'}.`
+    }
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

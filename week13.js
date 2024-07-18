@@ -158,8 +158,80 @@ let eye_lighting = csv.parse(fs.readFileSync('sample_data/eye_lighting.csv', 'ut
 // count = stats.countByValueCombination(eye_lighting, ['Eye', 'Lighting']);
 // print(count);
 
+print(`Let's compute the chi-squared test for independence for the Eye and Lighting columns from the slides:`);
 let chisq = stats.chiSquared(eye_lighting, {
   explanatory: 'Lighting',
   response: 'Eye'
 });
-print(chisq);
+print(`The chi-squared value is ${chisq}
+`.yellow);
+
+print(`Boostraping the null distribution of χ² values...`)
+let null_dist  = stats.nullDistributionChiSquared(eye_lighting, 1000, {
+  explanatory: 'Lighting',
+  response: 'Eye'
+});
+plotHistogram(null_dist, {
+  title: 'Null distribution of χ² values',
+  color: 'marine',
+  binStart: 0,
+  binEnd: 10,
+  binWidth: .2,
+  decimals: 0,
+});
+let p_value = stats.pValue(null_dist, chisq, "greater");
+print(`The p-value is ${p_value}`);
+print(`This p-value indicates that the observed data is statistically significant at the 0.05 level. This means that we can confidently reject the null hypothesis that nursery lighting and eye vision are independent.`);
+print();
+print(`The theory-based approach:`);
+
+let inf = stats.Inference.ChiSquared(eye_lighting, {
+  explanatory: 'Lighting',
+  response: 'Eye'
+});
+print(inf);
+print(`Same conclusions as before.`);
+print();
+
+
+
+
+print(`Let's look at the penguins and an absurd hypothesis: is the sex of the penguins biased by their species? In other words, are penguins of a particular species more likely to be of a particular gender?`);
+
+let penguins = csv.parse(fs.readFileSync('sample_data/palmer_penguins.csv', 'utf-8'), {
+  columns: true,
+  skip_empty_lines: true,
+  delimiter: ','
+});
+
+// Drop NA values
+penguins = penguins.filter(row => row['sex'] != 'NA');
+
+// chisq = stats.chiSquared(penguins, {
+//   explanatory: 'species',
+//   response: 'sex'
+// });
+// print(`The chi-squared value is ${chisq}.`.yellow);
+
+// null_dist  = stats.nullDistributionChiSquared(penguins, 1000, {
+//   explanatory: 'species',
+//   response: 'sex'
+// });
+// plotHistogram(null_dist, {
+//   title: 'Null distribution of χ² values',
+//   color: 'marine',
+//   binStart: 0,
+//   binEnd: 10,
+//   binWidth: .2,
+//   decimals: 0,
+// });
+// p_value = stats.pValue(null_dist, chisq, "greater");
+// print(`The p-value is ${p_value}`);
+
+inf = stats.Inference.ChiSquared(penguins, {
+  explanatory: 'species',
+  response: 'sex',
+  alpha: 0.05
+});
+print(inf);
+print(`As we can see, the p-value is so high, that we FAIL TO REJECT the null hypothesis that there is no association between the species of the penguins and their sex`.red);
