@@ -8,3 +8,5 @@ The main library is `stats.js`. Install dependencies running `npm i`.
 
 Repo contains several "notebooks" used to replicate the contents of course lectures, wrap-up sessions, psets, etc. Run any by doing `node week10.js`.
 
+Again, nothing to compete with R, Python or any sci-oriented package, just learning by doing 🤓
+
