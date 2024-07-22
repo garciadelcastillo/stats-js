@@ -554,7 +554,8 @@ inf = stats.Inference.ANOVA(cereal, {
 print(inf);
 
 
-print(`TEXT" 
+print(`TEXT:
+
 𝐻0 is that the average rating between each manufacturer is the same. 𝐻𝑎 is that at least one of the average ratings is different between manufacturers. All three methods give us low 𝑝-values, and they don’t conflict with each other.
 
 We should be careful in using the theory-based approach because we don’t have 𝑛 = 30 for any group. This means that our data could follow some distribution other than the assumed 𝐹 distribution. The standard deviations of each group are also significantly different, so we should be careful with any conclusions we draw from theory-based inference here.`)
