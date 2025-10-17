@@ -794,7 +794,7 @@ function rSquared(x, y, model) {
     return acc + Math.pow(yi - predictedY, 2);
   }, 0);
 
-  const adjustFactor = (x.length - 1) / (x.length - 1 - 1);
+  const adjustFactor = (x.length - 1) / (x.length - 1 - 1);  // (n - 1) / (n - k - 1) where k = 1 for simple linear regression model
 
   const r2 = 1 - (sumResiduals2 / sumY2);
   const r2adj = 1 - (sumResiduals2 / sumY2) * adjustFactor;
