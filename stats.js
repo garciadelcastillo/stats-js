@@ -653,6 +653,39 @@ function createObjectArray(keys, values) {
 }
 
 
+/**
+ * Removes null and NaN values from an array.
+ * @param {*} array 
+ * @returns 
+ */
+function dropna(array) {
+  return array.filter(x => x != null && !Number.isNaN(x));
+}
+
+
+/**
+ * Joins multiple arrays into a single array of arrays,
+ * where each subarray contains the elements from each
+ * input array at the same index.
+ * 
+ * For example, join([[1, 2, 3], ['a', 'b', 'c']])
+ * returns [[1, 'a'], [2, 'b'], [3, 'c']]
+ * @param {*} arrays
+ * @returns
+ */
+function join(arrays) {
+  const length = arrays[0].length;
+  const result = [];
+  for (let i = 0; i < length; i++) {
+    const row = [];
+    for (let j = 0; j < arrays.length; j++) {
+      row.push(arrays[j][i]);
+    }
+    result.push(row);
+  }
+  return result;
+}
+
 
 
 
@@ -2711,6 +2744,8 @@ module.exports = {
   F,
 
   createObjectArray,
+  dropna,
+  join,
 
   covariance,
   correlation,
